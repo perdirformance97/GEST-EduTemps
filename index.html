@@ -1,0 +1,2695 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PERDIRFORMANCE ⏱️ GEST-EduTemps & N+1</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+      color: #0f172a;
+      background-color: #f8fafc;
+      user-select: none;
+    }
+    .font-mono-num {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    .print-only { display: none; }
+    @page {
+      size: A4 landscape;
+      margin: 8mm;
+    }
+    @media print {
+      html, body {
+        background: white !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      main {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .print-break-inside-avoid {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .print-page-sheet {
+        page-break-after: always;
+        break-after: page;
+        page-break-inside: avoid;
+        break-inside: avoid;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .print-page-sheet:last-child {
+        page-break-after: auto;
+        break-after: auto;
+      }
+      .print-fit-table {
+        width: 100% !important;
+        min-width: 0 !important;
+        table-layout: fixed !important;
+        font-size: 9.5px !important;
+      }
+      .print-fit-table th,
+      .print-fit-table td {
+        padding: 4px 6px !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+      }
+      .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl { box-shadow: none !important; }
+      .border { border-color: #cbd5e1 !important; }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-blue-50/40 to-amber-50/30 relative overflow-x-hidden selection:bg-blue-700 selection:text-white">
+
+  <!-- FILE INPUTS ACCESSIBLES PAR LABEL NATIF (Compatible 100% des navigateurs & iframes) -->
+  <input type="file" id="masterCsvInput" onchange="handleMasterCsvFile(this)" style="position:fixed;top:-9999px;left:-9999px;opacity:0;">
+  <input type="file" id="calendarCsvInput" onchange="handleCalendarCsvFile(this)" style="position:fixed;top:-9999px;left:-9999px;opacity:0;">
+  <input type="file" id="masterJsonInput" accept=".json" onchange="handleJsonFile(this)" style="position:fixed;top:-9999px;left:-9999px;opacity:0;">
+
+  <!-- MODAL D'IMPORT / COLLER LE CALENDRIER (Secours universel navigateur) -->
+  <div id="calendarImportModal" class="hidden fixed inset-0 z-50 bg-blue-950/60 backdrop-blur-xs flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-6 border-2 border-blue-200 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-blue-100 pb-3">
+        <h3 class="font-black text-blue-950 text-base flex items-center gap-2">
+          <span>📅</span> Importer le Calendrier EDT (EXP_CALENDRIER.csv)
+        </h3>
+        <button type="button" onclick="closeCalendarModal()" class="text-slate-400 hover:text-slate-700 font-bold text-lg px-2">✕</button>
+      </div>
+
+      <!-- Zone Drag & Drop + Bouton Label Natif -->
+      <label for="calendarCsvInput" id="calendarDropZone" class="block border-2 border-dashed border-blue-300 hover:border-amber-400 bg-blue-50/50 hover:bg-amber-50/40 rounded-2xl p-6 text-center cursor-pointer transition">
+        <div class="text-3xl mb-2">📂</div>
+        <div class="text-xs font-extrabold text-blue-950">Cliquez ici pour choisir votre fichier <span class="underline text-blue-700">EXP_CALENDRIER.csv</span></div>
+        <div class="text-[11px] text-slate-500 mt-1">ou glissez-déposez directement le fichier dans ce cadre</div>
+      </label>
+
+      <!-- Alternative : Coller directement le contenu -->
+      <div class="space-y-1.5 pt-2 border-t border-slate-200">
+        <label class="block text-[11px] font-extrabold text-slate-700">📋 Ou collez directement le contenu du fichier CSV ci-dessous :</label>
+        <textarea id="pasteCalendarArea" rows="3" placeholder='ANNEE;DATEDEBUT;DATEFIN;SEMAINES;FERIES&#10;2025-2026;2025-08-29;2026-07-11;"0121212100...";"000..."' class="w-full border border-blue-200 rounded-xl p-2.5 text-xs font-mono bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+        <div class="flex justify-end gap-2 pt-1">
+          <button type="button" onclick="closeCalendarModal()" class="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">Fermer</button>
+          <button type="button" onclick="importPastedCalendar()" class="bg-blue-700 hover:bg-blue-600 text-white font-extrabold px-4 py-1.5 rounded-xl text-xs shadow-sm transition">
+            ✅ Valider le texte collé
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER PERDIRFORMANCE -->
+  <header class="bg-gradient-to-r from-blue-950 via-blue-900 to-blue-800 text-white shadow-xl sticky top-0 z-40 no-print border-b-4 border-amber-400">
+    <div class="max-w-[1460px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-4">
+      <!-- Identité & Statut -->
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex items-center gap-2.5">
+          <span class="text-sm sm:text-base font-black uppercase tracking-[0.22em] text-amber-400">
+            PERDIRFORMANCE
+          </span>
+          <span class="text-base sm:text-lg leading-none" title="Gestion du Temps Scolaire">⏱️</span>
+          <h1 class="text-base sm:text-xl font-extrabold tracking-tight text-white">
+            GEST-EduTemps
+          </h1>
+        </div>
+        <span id="datasetBadge" class="px-3 py-1 text-[11px] font-bold rounded-full bg-blue-950/70 text-amber-300 border border-amber-400/40">
+          En attente du CSV (EDT)
+        </span>
+      </div>
+
+      <!-- Barre d'actions épurée -->
+      <div class="flex flex-wrap items-center gap-2">
+        <label for="masterCsvInput" class="cursor-pointer bg-amber-400 hover:bg-amber-300 text-blue-950 text-xs font-extrabold px-3.5 py-2 rounded-xl shadow-md transition flex items-center gap-1.5">
+          <span>📂 Importer EXP_COURS.csv (Cours & Profs)</span>
+        </label>
+        <label for="calendarCsvInput" class="cursor-pointer bg-blue-700 hover:bg-blue-600 text-amber-300 text-xs font-extrabold px-3 py-2 rounded-xl border border-amber-400/40 shadow-md transition flex items-center gap-1.5">
+          <span>📅 Importer EXP_CALENDRIER.csv</span>
+        </label>
+
+        <div class="h-5 w-px bg-blue-700/80 mx-1 hidden sm:block"></div>
+
+        <button type="button" onclick="saveProjectJson()" id="btnSaveJson" class="bg-blue-800/90 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded-xl border border-blue-600 transition" title="Sauvegarder le projet (.json)">
+          💾 Sauvegarder
+        </button>
+        <label for="masterJsonInput" class="cursor-pointer bg-blue-800/90 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded-xl border border-blue-600 transition" title="Restaurer un projet (.json)">
+          📥 Restaurer
+        </label>
+        <button type="button" onclick="clearToBlankState(true)" class="bg-blue-950/60 hover:bg-red-600 text-amber-300 hover:text-white text-xs font-bold p-2 rounded-xl border border-blue-700/60 transition" title="Réinitialiser">
+          🗑️
+        </button>
+      </div>
+    </div>
+
+    <!-- 2-STEP NAVIGATION RIBBON -->
+    <div class="bg-white/95 text-slate-800 backdrop-blur-md border-b border-blue-100 shadow-xs">
+      <div class="max-w-[1460px] mx-auto px-4 sm:px-6 py-2.5 grid grid-cols-1 md:grid-cols-2 gap-2.5">
+        <button type="button" onclick="goToStep(1)" id="stepper-1" class="flex items-center gap-3 p-2.5 rounded-2xl border text-left transition">
+          <span id="step-num-1" class="w-8 h-8 rounded-xl font-extrabold text-xs flex items-center justify-center shrink-0">1</span>
+          <div class="overflow-hidden">
+            <div class="text-xs font-extrabold truncate">1. Prépa N+1 : Vœux & Tableau de Contrôle (Indépendant)</div>
+            <div id="step-sub-1" class="text-[11px] text-slate-500 truncate">Gérer la liste des professeurs, saisir SA/SB et vérifier l'équilibre des créneaux</div>
+          </div>
+        </button>
+
+        <button type="button" onclick="goToStep(2)" id="stepper-2" class="flex items-center gap-3 p-2.5 rounded-2xl border text-left transition">
+          <span id="step-num-2" class="w-8 h-8 rounded-xl font-extrabold text-xs flex items-center justify-center shrink-0">2</span>
+          <div class="overflow-hidden">
+            <div class="text-xs font-extrabold truncate">2. Examens : Surveillances selon Cours, Groupes & Calendrier</div>
+            <div id="step-sub-2" class="text-[11px] text-slate-500 truncate">Analyse des cours, groupes de divisions et calendrier EDT</div>
+          </div>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toastBanner" class="hidden fixed bottom-5 right-5 z-50 max-w-md bg-blue-900 text-white px-4 py-3.5 rounded-2xl shadow-2xl border-2 border-amber-400 flex items-center gap-3 text-xs sm:text-sm no-print">
+    <span class="w-3 h-3 rounded-full bg-amber-400 shrink-0 animate-ping"></span>
+    <span id="toastMessage" class="flex-1 font-semibold">Message</span>
+    <button type="button" onclick="hideToast()" class="text-blue-200 hover:text-white font-bold px-1">✕</button>
+  </div>
+  
+  <!-- BANNIÈRE AUTOSAVE AU DÉMARRAGE -->
+  <div id="autosaveRestoreBanner" class="hidden max-w-4xl mx-auto mt-6 mb-2 p-4 rounded-2xl bg-gradient-to-r from-blue-800 to-blue-700 text-white border-l-8 border-amber-400 shadow-lg flex flex-wrap items-center justify-between gap-3 no-print z-50">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">💾</span>
+      <div>
+        <div class="font-extrabold text-sm text-amber-300">Une session de travail (voeux N+1) a été sauvegardée automatiquement !</div>
+        <div id="autosaveBannerDetails" class="text-xs text-blue-100">Retrouvez vos cours et souhaits professeurs en un clic.</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button type="button" onclick="restoreFromAutosave()" class="bg-amber-400 text-blue-950 hover:bg-amber-300 font-extrabold text-xs px-4 py-2 rounded-xl shadow">
+        Reprendre mon travail
+      </button>
+      <button type="button" onclick="dismissAutosaveBanner()" class="bg-blue-900/70 hover:bg-blue-950 text-blue-100 text-xs px-3 py-2 rounded-xl">
+        Ignorer
+      </button>
+    </div>
+  </div>
+
+  <main class="flex-1 max-w-[1460px] w-full mx-auto px-4 sm:px-6 py-6 space-y-6 relative z-10">
+
+    <!-- ÉCRAN D'ACCUEIL (Étape 0) -->
+    <section id="step-panel-0" class="hidden max-w-4xl mx-auto my-4 no-print">
+      <div class="bg-white/95 backdrop-blur-md rounded-3xl p-8 border-2 border-dashed border-blue-300 hover:border-amber-400 transition shadow-xl text-center space-y-4">
+        <div class="text-5xl">📊</div>
+        <h2 class="text-xl font-black text-blue-950">Bienvenue dans GEST-EduTemps & N+1</h2>
+        <div class="pt-4 flex flex-wrap items-center justify-center gap-3">
+          <button type="button" onclick="goToStep(1)" class="bg-amber-400 hover:bg-amber-300 text-blue-950 font-extrabold px-6 py-3 rounded-xl shadow-md transition text-sm">
+            🎯 Ouvrir Module 1 (Vœux N+1 sans cours)
+          </button>
+          <button type="button" onclick="goToStep(2)" class="bg-blue-700 hover:bg-blue-600 text-white font-extrabold px-6 py-3 rounded-xl shadow-md transition text-sm">
+            📝 Ouvrir Module 2 (Examens & Cours)
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ÉTAPE 1 : PRÉPA N+1 (VŒUX & BILAN) -->
+    <section id="step-panel-1" class="hidden space-y-5">
+      <div class="bg-white p-4 rounded-3xl border border-blue-200 shadow-sm flex flex-wrap items-center justify-between gap-4 no-print">
+        <div class="flex flex-wrap gap-4 font-extrabold text-xs sm:text-sm text-slate-500">
+          <button type="button" onclick="switchStep1Tab('voeux')" id="tab-btn-voeux" class="text-blue-800 border-b-2 border-blue-700 pb-1 flex items-center gap-1.5">
+            <span>🎯</span> A. Saisie des Vœux Professeurs
+          </button>
+          <button type="button" onclick="switchStep1Tab('bilan')" id="tab-btn-bilan" class="hover:text-blue-700 border-b-2 border-transparent pb-1 flex items-center gap-1.5">
+            <span>⚖️</span> B. Tableau de Contrôle N+1 (Équilibre des Créneaux)
+          </button>
+        </div>
+        <div class="text-[11px] font-bold text-blue-900 bg-blue-50 px-3 py-1 rounded-xl border border-blue-200">
+          💡 Module 1 autonome : ne dépend pas des cours importés.
+        </div>
+      </div>
+
+      <!-- Sous-onglet A : Saisie -->
+      <div id="s1-tab-voeux" class="grid lg:grid-cols-[290px_minmax(0,1fr)] gap-4 items-start no-print">
+        <div class="bg-white rounded-3xl border border-blue-200 shadow-sm flex flex-col h-[740px]">
+          <div class="p-3.5 border-b border-blue-100 bg-blue-50/50 rounded-t-3xl space-y-2">
+            <div class="flex items-center justify-between">
+              <h3 class="font-extrabold text-blue-950 text-xs">👤 Professeurs (<span id="profCountLabel">0</span>)</h3>
+              <button type="button" onclick="toggleBulkAddModal()" class="text-[10px] font-extrabold bg-blue-100 hover:bg-blue-200 text-blue-900 px-2 py-0.5 rounded-lg transition" title="Coller une liste de professeurs">
+                📋 Liste +
+              </button>
+            </div>
+            <!-- Ajout rapide d'un professeur -->
+            <div class="flex items-center gap-1.5 w-full">
+              <input type="text" id="newProfInput" onkeydown="if(event.key==='Enter') addNewProf()" placeholder="➕ Nouveau prof..." class="min-w-0 flex-1 border border-blue-200 rounded-xl px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <button type="button" onclick="addNewProf()" class="shrink-0 bg-blue-700 hover:bg-blue-600 text-white font-extrabold px-3 py-1.5 rounded-xl text-xs shadow-xs transition">Ajouter</button>
+            </div>
+            <!-- Zone d'ajout par liste (cachée par défaut) -->
+            <div id="bulkAddBox" class="hidden space-y-1.5 pt-1 border-t border-blue-200/60">
+              <textarea id="bulkProfTextarea" rows="3" placeholder="Un nom par ligne..." class="w-full border border-blue-200 rounded-xl p-2 text-xs bg-white focus:outline-none"></textarea>
+              <div class="flex justify-end gap-1.5">
+                <button type="button" onclick="toggleBulkAddModal()" class="text-[10px] font-bold text-slate-500 px-2 py-1">Annuler</button>
+                <button type="button" onclick="addBulkProfs()" class="bg-amber-400 hover:bg-amber-300 text-blue-950 font-extrabold text-[10px] px-2.5 py-1 rounded-lg">Importer les noms</button>
+              </div>
+            </div>
+            <input type="text" id="profSearch" oninput="renderProfList()" placeholder="🔍 Filtrer la liste..." class="w-full border border-blue-200 rounded-xl px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div id="profList" class="p-2 space-y-1.5 overflow-y-auto flex-1 text-xs"></div>
+          <div class="p-3 border-t border-blue-100 bg-blue-50/50 rounded-b-3xl space-y-1.5">
+             <button type="button" onclick="applyGlobalConstraint(0, 'RED')" class="w-full bg-red-100 hover:bg-red-200 text-red-900 font-extrabold text-[11px] py-1.5 px-2.5 rounded-xl border border-red-300 transition">
+              🚫 Interdire 07h-08h (Cochés)
+            </button>
+            <button type="button" onclick="applyGlobalConstraint(8, 'ORANGE')" class="w-full bg-amber-100 hover:bg-amber-200 text-amber-950 font-extrabold text-[11px] py-1.5 px-2.5 rounded-xl border border-amber-300 transition">
+              🌇 Éviter 15h50-16h (Cochés)
+            </button>
+             <button type="button" onclick="clearSelectedProfsConstraints()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] py-1.5 px-2.5 rounded-xl border border-slate-200 transition">
+              🧹 Gommer vœux (Cochés)
+            </button>
+            <button type="button" onclick="deleteCheckedProfs()" class="w-full bg-red-50 hover:bg-red-600 text-red-700 hover:text-white font-bold text-[11px] py-1.5 px-2.5 rounded-xl border border-red-200 transition">
+              🗑️ Supprimer profs cochés
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <div class="bg-white p-3.5 rounded-2xl border border-blue-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 class="text-sm font-extrabold text-blue-950 flex items-center gap-1.5">
+                <span>🎯</span> <span id="activeProfTitle" class="text-blue-700 underline decoration-amber-400 decoration-2">—</span>
+              </h2>
+              <p class="text-[11px] text-slate-500 mt-0.5">Cliquez sur une case ou utilisez les boutons <strong>☀️ Après-midi</strong> / <strong>🌅 Matin</strong> d'un jour pour appliquer le pinceau actif.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="inline-flex flex-wrap items-center gap-1 bg-slate-100 p-1.5 rounded-xl border border-slate-200 text-xs">
+                <button type="button" onclick="setBrush('GREEN')" id="brush-GREEN" class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold border border-emerald-400 bg-emerald-50 text-emerald-900 transition">🟩 Dispo</button>
+                <button type="button" onclick="setBrush('ORANGE')" id="brush-ORANGE" class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold border border-amber-400 bg-amber-100 text-amber-950 transition">🟧 À éviter</button>
+                <button type="button" onclick="setBrush('SA')" id="brush-SA" class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold border border-purple-500 bg-purple-100 text-purple-900 transition">🟪 Indispo SA (Gauche)</button>
+                <button type="button" onclick="setBrush('SB')" id="brush-SB" class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold border border-sky-500 bg-sky-100 text-sky-900 transition">🟦 Indispo SB (Droite)</button>
+                <button type="button" onclick="setBrush('RED')" id="brush-RED" class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold border border-red-600 bg-red-600 text-white ring-2 ring-blue-400 transition">🟥 Indispo (SA+SB)</button>
+              </div>
+              <div class="inline-flex items-center gap-1.5">
+                <button type="button" onclick="printActiveProfVoeux()" class="bg-blue-800 hover:bg-blue-700 text-white font-extrabold px-3 py-1.5 rounded-xl text-[11px] shadow-xs transition flex items-center gap-1" title="Imprimer la fiche du professeur affiché en A4 Paysage">
+                  <span>🖨️</span> Fiche prof actif
+                </button>
+                <button type="button" onclick="printSelectedProfsVoeux()" class="bg-amber-400 hover:bg-amber-300 text-blue-950 font-extrabold px-3 py-1.5 rounded-xl text-[11px] shadow-xs transition flex items-center gap-1" title="Imprimer une fiche par page A4 Paysage pour chaque professeur coché">
+                  <span>🖨️</span> Profs cochés (<span id="printCheckedCount">0</span>)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-3xl border border-blue-200 shadow-sm overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-[840px]">
+              <thead>
+                <tr class="bg-blue-900 text-white text-xs uppercase border-b-2 border-amber-400">
+                  <th class="p-3 w-32 border-r border-white/15">Créneau</th>
+                  <th class="p-2.5 w-1/5 border-r border-white/15">
+                    <div class="flex items-center justify-between">
+                      <span>Lundi</span>
+                      <div class="flex gap-1">
+                        <button type="button" onclick="paintPeriodDay('lundi', 'AM')" class="px-1.5 py-0.5 rounded bg-blue-800 hover:bg-amber-400 hover:text-blue-950 text-[9px] font-bold transition" title="Colorier toute la matinée">Matin</button>
+                        <button type="button" onclick="paintPeriodDay('lundi', 'PM')" class="px-1.5 py-0.5 rounded bg-amber-400 text-blue-950 hover:bg-amber-300 text-[9px] font-black transition" title="Colorier tout l'après-midi">Après-midi</button>
+                      </div>
+                    </div>
+                  </th>
+                  <th class="p-2.5 w-1/5 border-r border-white/15">
+                    <div class="flex items-center justify-between">
+                      <span>Mardi</span>
+                      <div class="flex gap-1">
+                        <button type="button" onclick="paintPeriodDay('mardi', 'AM')" class="px-1.5 py-0.5 rounded bg-blue-800 hover:bg-amber-400 hover:text-blue-950 text-[9px] font-bold transition" title="Colorier toute la matinée">Matin</button>
+                        <button type="button" onclick="paintPeriodDay('mardi', 'PM')" class="px-1.5 py-0.5 rounded bg-amber-400 text-blue-950 hover:bg-amber-300 text-[9px] font-black transition" title="Colorier tout l'après-midi">Après-midi</button>
+                      </div>
+                    </div>
+                  </th>
+                  <th class="p-2.5 w-1/5 border-r border-white/15">
+                    <div class="flex items-center justify-between">
+                      <span>Mercredi</span>
+                      <div class="flex gap-1">
+                        <button type="button" onclick="paintPeriodDay('mercredi', 'AM')" class="px-1.5 py-0.5 rounded bg-blue-800 hover:bg-amber-400 hover:text-blue-950 text-[9px] font-bold transition" title="Colorier toute la matinée">Matin</button>
+                        <button type="button" onclick="paintPeriodDay('mercredi', 'PM')" class="px-1.5 py-0.5 rounded bg-amber-400 text-blue-950 hover:bg-amber-300 text-[9px] font-black transition" title="Colorier tout l'après-midi">Après-midi</button>
+                      </div>
+                    </div>
+                  </th>
+                  <th class="p-2.5 w-1/5 border-r border-white/15">
+                    <div class="flex items-center justify-between">
+                      <span>Jeudi</span>
+                      <div class="flex gap-1">
+                        <button type="button" onclick="paintPeriodDay('jeudi', 'AM')" class="px-1.5 py-0.5 rounded bg-blue-800 hover:bg-amber-400 hover:text-blue-950 text-[9px] font-bold transition" title="Colorier toute la matinée">Matin</button>
+                        <button type="button" onclick="paintPeriodDay('jeudi', 'PM')" class="px-1.5 py-0.5 rounded bg-amber-400 text-blue-950 hover:bg-amber-300 text-[9px] font-black transition" title="Colorier tout l'après-midi">Après-midi</button>
+                      </div>
+                    </div>
+                  </th>
+                  <th class="p-2.5 w-1/5">
+                    <div class="flex items-center justify-between">
+                      <span>Vendredi</span>
+                      <div class="flex gap-1">
+                        <button type="button" onclick="paintPeriodDay('vendredi', 'AM')" class="px-1.5 py-0.5 rounded bg-blue-800 hover:bg-amber-400 hover:text-blue-950 text-[9px] font-bold transition" title="Colorier toute la matinée">Matin</button>
+                        <button type="button" onclick="paintPeriodDay('vendredi', 'PM')" class="px-1.5 py-0.5 rounded bg-amber-400 text-blue-950 hover:bg-amber-300 text-[9px] font-black transition" title="Colorier tout l'après-midi">Après-midi</button>
+                      </div>
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="voeuxGridBody" class="divide-y divide-blue-100 text-xs"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sous-onglet B : Bilan Global N+1 -->
+      <div id="s1-tab-bilan" class="hidden space-y-4">
+        <div class="bg-gradient-to-r from-blue-900 to-blue-800 p-5 rounded-2xl text-white shadow-md flex flex-wrap items-center justify-between gap-4 no-print">
+          <div>
+            <h2 class="text-base font-black text-amber-400">⚖️ Tableau de Contrôle & Répartition Idéale des Créneaux (N+1)</h2>
+            <p class="text-xs text-blue-100 mt-1 max-w-3xl">Ce tableau évalue uniquement les vœux saisis sur l'effectif des professeurs du Module 1 (sans tenir compte des cours). Il vérifie si les créneaux restent bien servis en Semaine A (à gauche) et en Semaine B (à droite) :</p>
+            <div class="flex flex-wrap gap-3 mt-2.5 text-[11px] font-bold">
+              <span class="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-400 text-emerald-200">🟩 Vert : Bien servi (≥ 75% des profs disponibles)</span>
+              <span class="px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-400 text-amber-200">🟧 Orange : Moins tendu / Vigilance (60% à 74% disponibles)</span>
+              <span class="px-2.5 py-1 rounded-lg bg-red-500/30 border border-red-400 text-red-200">🟥 Rouge : Créneau tendu (&lt; 60% des profs disponibles)</span>
+            </div>
+          </div>
+          <button type="button" onclick="printBilanTable()" class="bg-amber-400 text-blue-950 font-bold px-4 py-2 rounded-xl text-xs hover:bg-amber-300 shadow-sm transition">🖨️ Imprimer le Bilan (A4 Paysage)</button>
+        </div>
+
+        <div class="bg-white rounded-3xl border border-blue-200 shadow-sm overflow-x-auto print-page-sheet">
+          <div class="print-only mb-2 pb-1.5 border-b-2 border-blue-900 flex items-center justify-between">
+            <div>
+              <div class="text-[10px] font-black uppercase tracking-widest text-blue-800">PERDIRFORMANCE ⏱️ GEST-EduTemps & N+1</div>
+              <h2 class="text-sm font-black text-blue-950">Tableau de Contrôle & Répartition des Créneaux (Préparation N+1)</h2>
+            </div>
+            <div class="text-[10px] font-bold text-slate-600" id="bilanPrintMeta"></div>
+          </div>
+          <table class="w-full text-left border-collapse min-w-[900px] print-fit-table text-xs">
+            <thead>
+              <tr class="bg-blue-900 text-white uppercase border-b-2 border-amber-400">
+                <th class="p-3 w-28 border-r border-white/15">Créneau</th>
+                <th class="p-3 w-1/5 border-r border-white/15">Lundi</th>
+                <th class="p-3 w-1/5 border-r border-white/15">Mardi</th>
+                <th class="p-3 w-1/5 border-r border-white/15">Mercredi</th>
+                <th class="p-3 w-1/5 border-r border-white/15">Jeudi</th>
+                <th class="p-3 w-1/5">Vendredi</th>
+              </tr>
+            </thead>
+            <tbody id="bilanGridBody" class="divide-y divide-blue-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ÉTAPE 2 : EXAMENS (PROFS LIBÉRÉS ET EN TROU) -->
+    <section id="step-panel-2" class="hidden space-y-5">
+      <div class="bg-white/95 backdrop-blur-md p-5 rounded-3xl border-2 border-blue-200 shadow-sm space-y-4 no-print">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-blue-100 pb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-400 text-blue-950 flex items-center justify-center text-xl font-bold shadow-sm">📝</div>
+            <div>
+              <h2 class="text-base font-black text-blue-950">Organisation des Surveillances (Examens)</h2>
+              <p class="text-xs text-slate-500">Disponibilités calculées à partir des cours (`EXP_COURS.csv`), des groupes de divisions et du calendrier (`EXP_CALENDRIER.csv`).</p>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <span id="calendarStatusBadge" class="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+              📅 Calendrier : Non importé (Mode manuel)
+            </span>
+            <label for="masterCsvInput" class="cursor-pointer bg-blue-100 hover:bg-blue-200 text-blue-950 text-xs font-extrabold px-3 py-1.5 rounded-xl transition">
+              📂 Charger EXP_COURS.csv (Cours & Profs)
+            </label>
+            <label for="calendarCsvInput" class="cursor-pointer bg-amber-100 hover:bg-amber-200 text-amber-950 text-xs font-extrabold px-3 py-1.5 rounded-xl border border-amber-300 transition">
+              📅 Charger EXP_CALENDRIER.csv
+            </label>
+          </div>
+        </div>
+
+        <!-- Sélecteur de Date précise si Calendrier importé -->
+        <div id="calendarPickerRow" class="hidden bg-blue-50/70 p-3.5 rounded-2xl border border-blue-200 space-y-3 text-xs">
+          <div class="grid md:grid-cols-2 gap-3 items-end">
+            <div>
+              <label class="block font-extrabold text-blue-950 mb-1 uppercase tracking-wide text-[10px]">📅 Option 1 : Choisir une semaine du Calendrier EDT</label>
+              <select id="examCalendarWeekSelect" onchange="onCalendarWeekSelectChange()" class="w-full border border-blue-300 rounded-xl px-3 py-1.5 bg-white font-bold text-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">— Sélectionner une semaine du calendrier —</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-extrabold text-blue-950 mb-1 uppercase tracking-wide text-[10px]">📆 Option 2 : Choisir une date exacte (ajuste Jour + SA/SB + Fériés)</label>
+              <input type="date" id="examCalendarDate" onchange="onCalendarDateChange()" class="w-full border border-blue-300 rounded-xl px-3 py-1.5 bg-white font-bold text-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-blue-200/60">
+            <div id="calendarDateInfo" class="text-xs font-bold text-blue-900">
+              Sélectionnez une semaine ou une date pour régler automatiquement la Semaine A (Q1) / Semaine B (Q2).
+            </div>
+            <button type="button" onclick="clearCalendarDateSelection()" class="text-[11px] font-bold text-slate-500 hover:text-red-600 underline">
+              Revenir au choix manuel
+            </button>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-4 gap-4 text-xs">
+          <!-- Filtre Jour -->
+          <div>
+            <label class="block font-extrabold text-blue-900 mb-1.5 uppercase tracking-wide text-[10px]">Jour de l'examen</label>
+            <select id="examDay" onchange="onExamDayChange()" class="w-full border border-blue-200 rounded-xl px-3 py-2 bg-blue-50/30 font-bold text-blue-950 focus:outline-none focus:border-blue-500">
+              <option value="lundi">Lundi</option>
+              <option value="mardi">Mardi</option>
+              <option value="mercredi">Mercredi</option>
+              <option value="jeudi">Jeudi</option>
+              <option value="vendredi">Vendredi</option>
+            </select>
+          </div>
+          <!-- Filtre Demi-journée -->
+          <div>
+            <label class="block font-extrabold text-blue-900 mb-1.5 uppercase tracking-wide text-[10px]">Période</label>
+            <select id="examPeriod" onchange="computeExamSupervisors()" class="w-full border border-blue-200 rounded-xl px-3 py-2 bg-blue-50/30 font-bold text-blue-950 focus:outline-none focus:border-blue-500">
+              <option value="AM">Matinée (07h - 12h)</option>
+              <option value="PM">Après-midi (13h45 - 17h)</option>
+            </select>
+          </div>
+          <!-- Filtre Niveaux & Divisions -->
+          <div>
+            <label class="block font-extrabold text-blue-900 mb-1.5 uppercase tracking-wide text-[10px]">Niveaux convoqués (Classes & Groupes libérés)</label>
+            <div class="flex flex-wrap gap-2" id="examLevelsContainer">
+              <label class="flex items-center gap-1.5 cursor-pointer bg-white border border-blue-200 px-2 py-1 rounded-lg hover:bg-amber-50 transition">
+                <input type="checkbox" value="3" onchange="computeExamSupervisors()" class="w-3.5 h-3.5 accent-amber-500 exam-level-cb" checked> <span class="font-bold">3ème</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer bg-white border border-blue-200 px-2 py-1 rounded-lg hover:bg-amber-50 transition">
+                <input type="checkbox" value="4" onchange="computeExamSupervisors()" class="w-3.5 h-3.5 accent-amber-500 exam-level-cb"> <span class="font-bold">4ème</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer bg-white border border-blue-200 px-2 py-1 rounded-lg hover:bg-amber-50 transition">
+                <input type="checkbox" value="5" onchange="computeExamSupervisors()" class="w-3.5 h-3.5 accent-amber-500 exam-level-cb"> <span class="font-bold">5ème</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer bg-white border border-blue-200 px-2 py-1 rounded-lg hover:bg-amber-50 transition">
+                <input type="checkbox" value="6" onchange="computeExamSupervisors()" class="w-3.5 h-3.5 accent-amber-500 exam-level-cb"> <span class="font-bold">6ème</span>
+              </label>
+            </div>
+          </div>
+          <!-- Semaine A/B & CTA -->
+          <div class="flex flex-col justify-end">
+            <label class="block font-extrabold text-blue-900 mb-1.5 uppercase tracking-wide text-[10px]">Semaine concernée</label>
+            <div class="flex gap-2">
+              <select id="examWeek" onchange="computeExamSupervisors()" class="w-full border border-blue-200 rounded-xl px-3 py-2 bg-blue-50/30 font-bold text-blue-950 focus:outline-none focus:border-blue-500">
+                <option value="Q1">Semaine A (H + Q1)</option>
+                <option value="Q2">Semaine B (H + Q2)</option>
+                <option value="H">Commune (H + Toutes)</option>
+              </select>
+              <button type="button" onclick="computeExamSupervisors()" class="bg-blue-700 hover:bg-blue-600 text-white font-black px-4 py-2 rounded-xl shadow-md shrink-0 transition">
+                Calculer
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grille des Résultats de Surveillances -->
+      <div class="bg-white rounded-3xl border border-blue-200 shadow-sm overflow-hidden min-h-[400px] print-page-sheet">
+        <div class="bg-gradient-to-r from-blue-900 to-blue-800 p-4 text-white flex items-center justify-between border-b-4 border-amber-400">
+          <div>
+            <h3 id="examResultTitle" class="font-black text-sm uppercase tracking-wide text-amber-400">Tableau de Surveillance</h3>
+            <p id="examResultSub" class="text-[11px] text-blue-100">Veuillez cliquer sur Calculer pour générer le tableau.</p>
+          </div>
+          <button type="button" onclick="printExamTable()" class="no-print bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+            <span>🖨️</span> Imprimer la grille (A4 Paysage)
+          </button>
+        </div>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs min-w-[800px] print-fit-table">
+            <thead>
+              <tr id="examTableHead" class="bg-blue-50 text-blue-950 uppercase border-b border-blue-200">
+                <th class="p-3 w-36 border-r border-blue-200">Créneau Horaire</th>
+                <th class="p-3 border-r border-blue-200 text-center text-slate-400 italic">...</th>
+              </tr>
+            </thead>
+            <tbody id="examTableBody" class="divide-y divide-blue-100">
+               <tr><td colspan="10" class="p-8 text-center text-slate-400 italic">Configurez les filtres et cliquez sur "Calculer" pour afficher les professeurs disponibles.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTENEUR D'IMPRESSION DÉDIÉ AUX FICHES INDIVIDUELLES DE VŒUX PROFESSEURS (A4 PAYSAGE, 1 PROF PAR PAGE) -->
+    <section id="voeuxPrintContainer" class="hidden"></section>
+
+  </main>
+
+<script>
+/**
+ * CONSTANTS & DATA
+ */
+const DAYS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'];
+const MAIN_SLOTS = [
+  { idx: 0, label: '07h00 - 08h00', code: '07h00', period: 'AM' },
+  { idx: 1, label: '08h00 - 09h00', code: '08h00', period: 'AM' },
+  { idx: 2, label: '09h00 - 10h00', code: '09h00', period: 'AM' },
+  { idx: 3, label: '10h05 - 11h00', code: '10h05', period: 'AM' },
+  { idx: 4, label: '11h00 - 12h00', code: '11h00', period: 'AM' },
+  { idx: 5, label: '12h30 - 13h30', code: '12h30', period: 'LUNCH' },
+  { idx: 6, label: '13h45 / 14h00', code: '13h45', period: 'PM' },
+  { idx: 7, label: '14h45 / 15h00', code: '14h45', period: 'PM' },
+  { idx: 8, label: '15h50 / 16h00', code: '15h50', period: 'PM' }
+];
+
+let hasLoadedFile = false;
+let currentStep = 1;
+let currentDatasetName = '';
+let rawHeaders = [];
+let courses = [];
+let allClasses = [];
+// Liste des professeurs propre au Module 1 (peut être enrichie manuellement ou depuis CSV)
+let allProfs = [];
+let teacherConstraints = {}; 
+let checkedProfs = new Set();
+let selectedProf = '';
+let activeBrush = 'RED';
+let isMouseDownPaint = false;
+
+// Données du Calendrier EDT (Module 2)
+let calendarData = null; 
+let selectedCalendarEntry = null;
+
+const AUTOSAVE_KEY = 'GEST_EXAM_N1_AUTOSAVE';
+
+/**
+ * UI & NAVIGATION
+ */
+function showToast(msg) {
+  const banner = document.getElementById('toastBanner');
+  document.getElementById('toastMessage').textContent = msg;
+  banner.classList.remove('hidden');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(hideToast, 4500);
+}
+
+function hideToast() { 
+  document.getElementById('toastBanner').classList.add('hidden'); 
+}
+
+function clearToBlankState(manual = false) {
+  hasLoadedFile = false;
+  currentStep = 1;
+  currentDatasetName = '';
+  rawHeaders = [];
+  courses = []; 
+  allClasses = []; 
+  allProfs = []; 
+  teacherConstraints = {}; 
+  checkedProfs.clear();
+  selectedProf = '';
+  calendarData = null;
+  selectedCalendarEntry = null;
+  
+  const badge = document.getElementById('datasetBadge');
+  badge.textContent = 'Prêt • En attente CSV';
+  badge.className = 'px-3 py-1 text-[11px] font-bold rounded-full bg-blue-950/70 text-amber-300 border border-amber-400/40';
+
+  // Réinitialisation complète de l'interface du Calendrier EDT (Module 2)
+  const calBadge = document.getElementById('calendarStatusBadge');
+  if (calBadge) {
+    calBadge.textContent = '📅 Calendrier : Non importé (Mode manuel)';
+    calBadge.className = 'px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200';
+  }
+  const calRow = document.getElementById('calendarPickerRow');
+  if (calRow) calRow.classList.add('hidden');
+  const weekSelect = document.getElementById('examCalendarWeekSelect');
+  if (weekSelect) weekSelect.innerHTML = '<option value="">— Sélectionner une semaine du calendrier —</option>';
+  const dateInput = document.getElementById('examCalendarDate');
+  if (dateInput) {
+    dateInput.value = '';
+    dateInput.removeAttribute('min');
+    dateInput.removeAttribute('max');
+  }
+  const calInfo = document.getElementById('calendarDateInfo');
+  if (calInfo) {
+    calInfo.textContent = 'Sélectionnez une semaine ou une date pour régler automatiquement la Semaine A (Q1) / Semaine B (Q2).';
+  }
+
+  // Réinitialisation des champs de fichiers cachés et de la grille d'examen
+  const masterInput = document.getElementById('masterCsvInput');
+  if (masterInput) masterInput.value = '';
+  const calInput = document.getElementById('calendarCsvInput');
+  if (calInput) calInput.value = '';
+  const examBody = document.getElementById('examTableBody');
+  if (examBody) {
+    examBody.innerHTML = '<tr><td colspan="10" class="p-8 text-center text-slate-400 italic">Configurez les filtres et cliquez sur "Calculer" pour afficher les professeurs disponibles.</td></tr>';
+  }
+  const examTitle = document.getElementById('examResultTitle');
+  if (examTitle) examTitle.textContent = 'Tableau de Surveillance';
+  const examSub = document.getElementById('examResultSub');
+  if (examSub) examSub.textContent = 'Veuillez importer EXP_COURS.csv et cliquer sur Calculer pour générer le tableau.';
+  
+  if (manual) {
+    try { localStorage.removeItem(AUTOSAVE_KEY); } catch (e) {}
+    showToast("🗑️ Cours, calendrier et vœux réinitialisés avec succès.");
+  }
+  updateStepperUI();
+  renderProfList();
+  renderVoeuxGrid();
+  renderBilanGrid();
+}
+
+function goToStep(stepNum) {
+  currentStep = stepNum;
+  updateStepperUI();
+
+  if (stepNum === 1) {
+    renderProfList();
+    renderVoeuxGrid();
+    renderBilanGrid();
+  } else if (stepNum === 2 && hasLoadedFile) {
+    computeExamSupervisors();
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateStepperUI() {
+  const p0 = document.getElementById('step-panel-0');
+  const p1 = document.getElementById('step-panel-1');
+  const p2 = document.getElementById('step-panel-2');
+  
+  p0.classList.add('hidden'); 
+  p1.classList.add('hidden'); 
+  p2.classList.add('hidden');
+  
+  if (currentStep === 0) p0.classList.remove('hidden');
+  if (currentStep === 1) p1.classList.remove('hidden');
+  if (currentStep === 2) p2.classList.remove('hidden');
+
+  [1, 2].forEach(n => {
+    const btn = document.getElementById(`stepper-${n}`);
+    const badge = document.getElementById(`step-num-${n}`);
+    if (n === currentStep) {
+      btn.className = 'flex items-center gap-3 p-2.5 rounded-2xl border-2 border-blue-700 bg-gradient-to-r from-blue-50 via-white to-amber-50/70 text-blue-950 text-left transition shadow-sm';
+      badge.className = 'w-8 h-8 rounded-xl font-extrabold text-xs flex items-center justify-center shrink-0 bg-amber-400 text-blue-950 shadow-xs';
+      badge.textContent = String(n);
+    } else {
+      btn.className = 'flex items-center gap-3 p-2.5 rounded-2xl border border-blue-100 bg-white hover:bg-blue-50/40 text-slate-700 text-left transition';
+      badge.className = 'w-8 h-8 rounded-xl font-extrabold text-xs flex items-center justify-center shrink-0 bg-blue-100 text-blue-800';
+      badge.textContent = String(n);
+    }
+  });
+}
+
+function switchStep1Tab(tab) {
+  document.getElementById('s1-tab-voeux').classList.toggle('hidden', tab !== 'voeux');
+  document.getElementById('s1-tab-bilan').classList.toggle('hidden', tab !== 'bilan');
+  
+  const bV = document.getElementById('tab-btn-voeux');
+  const bB = document.getElementById('tab-btn-bilan');
+  if (tab === 'voeux') {
+    bV.className = 'text-blue-800 border-b-2 border-blue-700 pb-1 flex items-center gap-1.5';
+    bB.className = 'hover:text-blue-700 border-b-2 border-transparent pb-1 flex items-center gap-1.5 text-slate-500';
+    renderVoeuxGrid();
+  } else {
+    bB.className = 'text-blue-800 border-b-2 border-blue-700 pb-1 flex items-center gap-1.5';
+    bV.className = 'hover:text-blue-700 border-b-2 border-transparent pb-1 flex items-center gap-1.5 text-slate-500';
+    renderBilanGrid();
+  }
+}
+
+/**
+ * SAUVEGARDE & RESTAURATION (AUTOSAVE ET JSON)
+ */
+function triggerAutosave() {
+  if (!allProfs.length && !courses.length) return;
+  try {
+    const state = {
+      version: 2,
+      savedAt: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+      currentDatasetName,
+      rawHeaders,
+      courses,
+      allClasses,
+      allProfs,
+      teacherConstraints,
+      checkedProfs: [...checkedProfs],
+      calendarData
+    };
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(state));
+  } catch (e) {}
+}
+
+function checkAutosaveOnStartup() {
+  try {
+    const raw = localStorage.getItem(AUTOSAVE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (data && ((data.allProfs && data.allProfs.length > 0) || (data.courses && data.courses.length > 0))) {
+      const banner = document.getElementById('autosaveRestoreBanner');
+      const details = document.getElementById('autosaveBannerDetails');
+      if (banner && details) {
+        details.textContent = `${(data.allProfs || []).length} professeurs • ${(data.courses || []).length} cours (sauvegardé à ${data.savedAt || ''})`;
+        banner.classList.remove('hidden');
+      }
+    }
+  } catch (e) {}
+}
+
+function restoreFromAutosave() {
+  try {
+    const raw = localStorage.getItem(AUTOSAVE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    restoreStateObject(data);
+    dismissAutosaveBanner();
+    showToast('🌱 Session précédente restaurée avec succès !');
+  } catch (e) {
+    showToast('⚠️ Impossible de restaurer la sauvegarde automatique.');
+  }
+}
+
+function dismissAutosaveBanner() {
+  document.getElementById('autosaveRestoreBanner')?.classList.add('hidden');
+}
+
+function saveProjectJson() {
+  const state = {
+    version: 2,
+    savedAt: new Date().toISOString(),
+    currentDatasetName,
+    rawHeaders,
+    courses,
+    allClasses,
+    allProfs,
+    teacherConstraints,
+    checkedProfs: [...checkedProfs],
+    calendarData
+  };
+  const pad = n => String(n).padStart(2, '0');
+  const now = new Date();
+  const filename = `GEST-EduTemps_${pad(now.getDate())}${pad(now.getMonth() + 1)}${now.getFullYear()}_${pad(now.getHours())}h${pad(now.getMinutes())}.json`;
+  
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  showToast(`💾 Projet sauvegardé sous ${filename}`);
+}
+
+function triggerJsonPicker() {
+  const input = document.getElementById('masterJsonInput');
+  input.value = '';
+  input.click();
+}
+
+function handleJsonFile(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    try {
+      const state = JSON.parse(evt.target.result);
+      restoreStateObject(state);
+      showToast(`🎉 Projet "${file.name}" restauré avec succès !`);
+    } catch (err) {
+      showToast('⚠️ Fichier de sauvegarde .json invalide.');
+    }
+    input.value = '';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function restoreStateObject(data) {
+  if (!data) return;
+  currentDatasetName = data.currentDatasetName || '';
+  rawHeaders = data.rawHeaders || [];
+  courses = data.courses || [];
+  allClasses = data.allClasses || [];
+  allProfs = data.allProfs || [];
+  teacherConstraints = data.teacherConstraints || {};
+  checkedProfs = new Set(data.checkedProfs || allProfs);
+  selectedProf = allProfs[0] || '';
+  hasLoadedFile = courses.length > 0;
+
+  // Recalculer systématiquement les classes/groupes parents avec la nouvelle détection (ex: [303G1] -> 303)
+  courses.forEach(c => {
+    c.isGroup = isGroupNotation(c['CLASSE']);
+    c.parentClasses = inferParentClasses(c['CLASSE']);
+  });
+
+  if (data.calendarData) {
+    calendarData = data.calendarData;
+    updateCalendarUI();
+  }
+
+  finalizeLoadedUI();
+}
+
+/**
+ * GESTION DES PROFESSEURS (AJOUT / SUPPRESSION DANS MODULE 1)
+ */
+function addNewProf() {
+  const input = document.getElementById('newProfInput');
+  const rawName = (input.value || '').trim().toUpperCase();
+  if (!rawName) return showToast('⚠️ Entrez le nom du professeur à ajouter.');
+  if (allProfs.includes(rawName)) {
+    selectedProf = rawName;
+    input.value = '';
+    renderProfList();
+    renderVoeuxGrid();
+    return showToast(`ℹ️ ${rawName} figure déjà dans la liste.`);
+  }
+  allProfs.push(rawName);
+  allProfs.sort((a, b) => a.localeCompare(b));
+  if (!teacherConstraints[rawName]) teacherConstraints[rawName] = {};
+  checkedProfs.add(rawName);
+  selectedProf = rawName;
+  input.value = '';
+  triggerAutosave();
+  renderProfList();
+  renderVoeuxGrid();
+  renderBilanGrid();
+  showToast(`✅ Professeur "${rawName}" ajouté.`);
+}
+
+function toggleBulkAddModal() {
+  const box = document.getElementById('bulkAddBox');
+  box.classList.toggle('hidden');
+}
+
+function addBulkProfs() {
+  const area = document.getElementById('bulkProfTextarea');
+  const lines = (area.value || '').split(/\r\n|\r|\n/).map(s => s.trim().toUpperCase()).filter(Boolean);
+  if (!lines.length) return showToast('⚠️ Aucun nom détecté.');
+  let added = 0;
+  lines.forEach(name => {
+    if (!allProfs.includes(name)) {
+      allProfs.push(name);
+      teacherConstraints[name] = {};
+      checkedProfs.add(name);
+      added++;
+    }
+  });
+  allProfs.sort((a, b) => a.localeCompare(b));
+  if (!selectedProf && allProfs.length) selectedProf = allProfs[0];
+  area.value = '';
+  document.getElementById('bulkAddBox').classList.add('hidden');
+  triggerAutosave();
+  renderProfList();
+  renderVoeuxGrid();
+  renderBilanGrid();
+  showToast(`✅ ${added} professeur(s) ajouté(s) à la liste.`);
+}
+
+function deleteSingleProf(prof) {
+  allProfs = allProfs.filter(p => p !== prof);
+  delete teacherConstraints[prof];
+  checkedProfs.delete(prof);
+  if (selectedProf === prof) {
+    selectedProf = allProfs[0] || '';
+  }
+  triggerAutosave();
+  renderProfList();
+  renderVoeuxGrid();
+  renderBilanGrid();
+  showToast(`🗑️ Professeur "${prof}" supprimé.`);
+}
+
+function deleteCheckedProfs() {
+  if (!checkedProfs.size) return showToast('⚠️ Aucun professeur coché à supprimer.');
+  const count = checkedProfs.size;
+  allProfs = allProfs.filter(p => !checkedProfs.has(p));
+  checkedProfs.forEach(p => delete teacherConstraints[p]);
+  checkedProfs.clear();
+  selectedProf = allProfs[0] || '';
+  triggerAutosave();
+  renderProfList();
+  renderVoeuxGrid();
+  renderBilanGrid();
+  showToast(`🗑️ ${count} professeur(s) supprimé(s).`);
+}
+
+/**
+ * CSV PARSING : COURS (EXP_COURS.csv) & GROUPES DE DIVISIONS
+ */
+function triggerCsvPicker() { 
+  const input = document.getElementById('masterCsvInput');
+  input.value = ''; 
+  input.click(); 
+}
+
+function triggerCalendarPicker() {
+  openCalendarModal();
+}
+
+function openCalendarModal() {
+  document.getElementById('calendarImportModal')?.classList.remove('hidden');
+}
+
+function closeCalendarModal() {
+  document.getElementById('calendarImportModal')?.classList.add('hidden');
+}
+
+function importPastedCalendar() {
+  const raw = document.getElementById('pasteCalendarArea')?.value || '';
+  if (!raw.trim()) return showToast('⚠️ Collez d\'abord le contenu du fichier EXP_CALENDRIER.csv.');
+  closeCalendarModal();
+  loadCalendarCSV(raw, 'Calendrier_Colle.csv');
+  goToStep(2);
+}
+
+function parseCSVLine(str, sep) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < str.length; i++) {
+        const char = str[i];
+        if (char === '"') {
+            inQuotes = !inQuotes;
+        } else if (char === sep && !inQuotes) {
+            result.push(current);
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    result.push(current);
+    return result.map(stripCsvQuotes);
+}
+
+// Décodage universel (gère UTF-16LE, UTF-16BE, UTF-8 et Windows-1252 d'Index Éducation)
+function decodeCsvBuffer(buffer) {
+  const bytes = new Uint8Array(buffer);
+  if (bytes.length >= 2) {
+    if (bytes[0] === 0xFF && bytes[1] === 0xFE) {
+      return new TextDecoder('utf-16le').decode(buffer);
+    }
+    if (bytes[0] === 0xFE && bytes[1] === 0xFF) {
+      return new TextDecoder('utf-16be').decode(buffer);
+    }
+    // Détection UTF-16 sans BOM (présence d'octets nuls un caractère sur deux)
+    let zeroCount = 0;
+    const checkLen = Math.min(bytes.length, 100);
+    for (let i = 0; i < checkLen; i++) {
+      if (bytes[i] === 0) zeroCount++;
+    }
+    if (zeroCount > checkLen * 0.25) {
+      return new TextDecoder('utf-16le').decode(buffer);
+    }
+  }
+  let text = new TextDecoder('utf-8').decode(buffer);
+  if (text.includes('\uFFFD')) {
+    text = new TextDecoder('windows-1252').decode(buffer);
+  }
+  return text.replace(/\0/g, '');
+}
+
+// Détecte si un contenu CSV est un fichier Calendrier EDT (EXP_CALENDRIER)
+function isCalendarCsvContent(text, filename = '') {
+  const clean = (text || '').replace(/\0/g, '');
+  const upper = clean.slice(0, 800).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (upper.includes('DATEDEBUT') || upper.includes('DATEFIN') || (upper.includes('SEMAINES') && upper.includes('FERIES'))) {
+    return true;
+  }
+  // Format grille mensuelle d'EDT : "Septembre;Octobre;Novembre;Décembre;Janvier..."
+  if (upper.includes('SEPTEMBRE') && upper.includes('OCTOBRE') && upper.includes('NOVEMBRE')) {
+    return true;
+  }
+  if (/CALENDRIER/i.test(filename)) {
+    return true;
+  }
+  // Détection par motif direct : deux dates ISO suivies d'une longue séquence de 0, 1, 2
+  if (/\d{4}-\d{2}-\d{2}\s*[;,]\s*\d{4}-\d{2}-\d{2}\s*[;,]\s*"?[012]{10,}/.test(clean)) {
+    return true;
+  }
+  return false;
+}
+
+// Lecture robuste d'un fichier avec fallback automatique readAsText + ArrayBuffer
+function readFileRobust(file, callback) {
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      const text = decodeCsvBuffer(evt.target.result);
+      callback(text);
+    } catch (e) {
+      const textReader = new FileReader();
+      textReader.onload = e2 => callback(String(e2.target.result || ''));
+      textReader.readAsText(file, 'UTF-8');
+    }
+  };
+  reader.onerror = function() {
+    const textReader = new FileReader();
+    textReader.onload = e2 => callback(String(e2.target.result || ''));
+    textReader.readAsText(file, 'UTF-8');
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function handleMasterCsvFile(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  readFileRobust(file, function(text) {
+    try {
+      if (isCalendarCsvContent(text, file.name)) {
+        closeCalendarModal();
+        loadCalendarCSV(text, file.name);
+        goToStep(2);
+      } else {
+        loadCSV(text, file.name);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('⚠️ Erreur lors de la lecture du fichier.');
+    }
+    input.value = '';
+  });
+}
+
+function handleCalendarCsvFile(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  readFileRobust(file, function(text) {
+    try {
+      closeCalendarModal();
+      const upper = text.slice(0, 1000).toUpperCase();
+      if (!isCalendarCsvContent(text, file.name) && (upper.includes('MAT_CODE') || (upper.includes('NUMERO') && upper.includes('JOUR')))) {
+        loadCSV(text, file.name);
+        goToStep(2);
+      } else {
+        loadCalendarCSV(text, file.name);
+        goToStep(2);
+      }
+    } catch (err) {
+      console.error('Erreur import calendrier:', err);
+      showToast(`⚠️ Erreur lecture calendrier : ${err && err.message ? err.message : 'Format inattendu'}`);
+    }
+    input.value = '';
+  });
+}
+
+function parseTime(str) {
+  if (!str) return 0;
+  const m = str.trim().match(/^(\d{1,2})h(\d{2})$/i);
+  if (!m) return 0;
+  return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+}
+
+function getSlotIndex(startMin) {
+  if (startMin < 450) return 0; if (startMin < 510) return 1; if (startMin < 570) return 2;
+  if (startMin < 635) return 3; if (startMin < 700) return 4; if (startMin < 790) return 5;
+  if (startMin < 860) return 6; if (startMin < 930) return 7; return 8;
+}
+
+function getSpanSlots(durationMin) {
+  if (durationMin <= 65) return 1; 
+  if (durationMin <= 125) return 2; 
+  if (durationMin <= 185) return 3; 
+  return 4;
+}
+
+function stripCsvQuotes(s) { 
+  return (s || '').trim().replace(/^"(.*)"$/, '$1').trim(); 
+}
+
+function normalizeHeader(h) {
+    return stripCsvQuotes(h).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+/**
+ * Analyse avancée des divisions et des groupes de divisions :
+ * Gère :
+ * - Classes simples : "301", "402"
+ * - Groupes collés ou espacés d'une division : "[303G1]", "[303G2]", "[301A]", "[301 GR1]", "301 <301>A" -> ["303"] / ["301"]
+ * - Groupes multi-divisions : "[301/302 ESP]", "[301G1/302G1]" -> ["301", "302"]
+ * - Groupes de niveau complet : "[3EME ESP2]", "[3e LV2]", "[3ESP1]", "[3LV2]" -> toutes les divisions du niveau 3e
+ * - Groupes multi-niveaux : "[4EME/3EME]" -> toutes les divisions de 4e et 3e
+ */
+function inferParentClasses(classeStr) {
+  if (!classeStr) return [];
+  const raw = classeStr.trim();
+
+  // 1. Extraction de tous les codes de divisions à 3 chiffres (ex: 301, 303 dans [303G1], [303G2], <301>A, 405...)
+  // On accepte qu'une lettre (G, A, B...) suive immédiatement les 3 chiffres (ex: 303G1), mais pas un 4ème chiffre
+  const explicitDivs = [...new Set([...raw.matchAll(/(?:^|[^0-9])([3456]0[1-9])(?![0-9])/g)].map(m => m[1]))];
+  if (explicitDivs.length > 0) {
+    return explicitDivs;
+  }
+
+  // 2. Si c'est un groupe entre crochets ou libellé de groupe sans code 301..309 explicite (ex: [3EME ESP], [3ESP1], [3G1])
+  const inner = raw.startsWith('[') && raw.endsWith(']') ? raw.slice(1, -1).trim() : raw;
+
+  // Recherche de niveaux mentionnés (ex: 3EME, 4E, 5°, ou chiffre de niveau 3, 4, 5, 6 suivi d'une lettre ou d'un espace)
+  const levelMatches = [...new Set([...inner.matchAll(/(?:^|[^0-9])([3456])(?:\s*(?:EME|ÈME|E|°)|[A-Z_\-\s]|$)/gi)].map(m => m[1]))];
+  if (levelMatches.length > 0) {
+    const matchedDivs = allClasses.filter(c => levelMatches.some(lvl => c.startsWith(lvl)));
+    if (matchedDivs.length > 0) return matchedDivs;
+    return levelMatches;
+  }
+
+  // Fallback si la chaîne commence directement par 3, 4, 5 ou 6
+  const startLvl = inner.match(/^([3456])/);
+  if (startLvl) {
+    const lvl = startLvl[1];
+    const matched = allClasses.filter(c => c.startsWith(lvl));
+    return matched.length ? matched : [lvl];
+  }
+
+  return [raw];
+}
+
+function isGroupNotation(classeStr) {
+  if (!classeStr) return false;
+  return classeStr.startsWith('[') || classeStr.includes('<') || classeStr.includes(',') || classeStr.includes('/') || /[3456]0[1-9][A-Za-z]/.test(classeStr);
+}
+
+function loadCSV(text, filename) {
+  if (isCalendarCsvContent(text, filename)) {
+    loadCalendarCSV(text, filename);
+    goToStep(2);
+    return;
+  }
+  const lines = text.replace(/^\uFEFF/, '').replace(/\0/g, '').split(/\r\n|\r|\n/).filter(l => l.trim().length > 0);
+  if (lines.length < 2) return showToast('⚠️ Fichier CSV vide ou mal formaté.');
+  
+  let sep = ';';
+  if (lines[0].split(';').length < 5 && lines[0].split(',').length >= 5) sep = ',';
+  else if (lines[0].split(';').length < 5 && lines[0].split('\t').length >= 5) sep = '\t';
+  
+  rawHeaders = parseCSVLine(lines[0], sep).map(normalizeHeader);
+  
+  if (!rawHeaders.includes('NUMERO') || !rawHeaders.includes('JOUR')) {
+    return showToast('⚠️ Colonnes de cours non reconnues (attendu: EXP_COURS.csv avec NUMERO, JOUR).');
+  }
+
+  currentDatasetName = filename;
+  const tempRows = lines.slice(1).map((line, idx) => {
+    const cols = parseCSVLine(line, sep);
+    const obj = {};
+    rawHeaders.forEach((h, i) => obj[h] = stripCsvQuotes(cols[i] || ''));
+    obj._id = idx;
+    return obj;
+  });
+
+  const cSet = new Set(), pSet = new Set();
+  tempRows.forEach(r => {
+    const cl = r['CLASSE'];
+    if (cl && !cl.startsWith('[') && !cl.includes('<')) cSet.add(cl);
+    if (r['PROF_NOM'] && !['PAS DE', 'HORAIR'].includes(r['MAT_CODE'])) {
+      r['PROF_NOM'].split(',').map(s => s.trim()).filter(Boolean).forEach(p => pSet.add(p));
+    }
+  });
+  
+  allClasses = [...cSet].sort((a, b) => b.localeCompare(a));
+
+  // On ajoute les professeurs du CSV au Module 1 sans écraser ceux déjà créés ou leurs vœux existants
+  pSet.forEach(p => {
+    if (!allProfs.includes(p)) {
+      allProfs.push(p);
+      teacherConstraints[p] = {};
+      checkedProfs.add(p);
+    }
+  });
+  allProfs.sort((a, b) => a.localeCompare(b));
+  if (!selectedProf && allProfs.length) selectedProf = allProfs[0];
+
+  courses = tempRows.map(r => {
+    const durMin = parseTime(r['DUREE']);
+    const startMin = parseTime(r['H.DEBUT']);
+    const slotIdx = getSlotIndex(startMin);
+    const span = getSpanSlots(durMin);
+    const profs = r['PROF_NOM'] ? r['PROF_NOM'].split(',').map(s => s.trim()).filter(Boolean) : [];
+    
+    let effAlt = 'H';
+    if (['Q1','Q2','S1','S2'].includes(r['ALTERNANCE'])) {
+        effAlt = r['ALTERNANCE'];
+    } else if (['Q1','Q2','S1','S2'].includes(r['FREQUENCE'])) {
+        effAlt = r['FREQUENCE'];
+    }
+
+    return { 
+        ...r, 
+        durMin, 
+        startMin, 
+        slotIdx, 
+        span, 
+        profs, 
+        effAlt,
+        isGroup: isGroupNotation(r['CLASSE'])
+    };
+  });
+
+  courses.forEach(c => {
+      c.parentClasses = inferParentClasses(c['CLASSE']);
+  });
+
+  hasLoadedFile = true;
+  finalizeLoadedUI();
+  triggerAutosave();
+  showToast(`🎉 Fichier chargé : ${courses.length} cours, ${allProfs.length} profs et ${allClasses.length} divisions.`);
+}
+
+/**
+ * PARSING UNIVERSEL DU CALENDRIER EDT (EXP_CALENDRIER.csv & autres exports EDT)
+ */
+function parseFlexibleDateToISO(str) {
+  if (!str) return null;
+  const s = stripCsvQuotes(String(str)).trim();
+  // Format YYYY-MM-DD ou YYYY/MM/DD (avec ou sans heure)
+  let m = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:\D|$)/);
+  if (m) {
+    const y = parseInt(m[1], 10);
+    const mo = parseInt(m[2], 10);
+    const d = parseInt(m[3], 10);
+    if (y >= 2000 && y <= 2100 && mo >= 1 && mo <= 12 && d >= 1 && d <= 31) {
+      return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    }
+  }
+  // Format DD/MM/YYYY, DD-MM-YYYY ou DD/MM/YY (avec ou sans heure)
+  m = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2}|\d{4})(?:\D|$)/);
+  if (m) {
+    const d = parseInt(m[1], 10);
+    const mo = parseInt(m[2], 10);
+    let y = parseInt(m[3], 10);
+    if (y < 100) y += 2000;
+    if (y >= 2000 && y <= 2100 && mo >= 1 && mo <= 12 && d >= 1 && d <= 31) {
+      return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    }
+  }
+  return null;
+}
+
+function isoToLocalDate(isoStr) {
+  if (!isoStr || typeof isoStr !== 'string') return new Date();
+  const parts = isoStr.split('-').map(Number);
+  if (parts.length < 3 || parts.some(isNaN)) return new Date();
+  return new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0); // Midi local pour éviter tout décalage d'heure d'été/hiver
+}
+
+function localDateToISO(dateObj) {
+  if (!dateObj || isNaN(dateObj.getTime())) return '2025-09-01';
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const d = String(dateObj.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function formatDateFR(isoStr) {
+  if (!isoStr || typeof isoStr !== 'string') return '';
+  const parts = isoStr.split('-');
+  if (parts.length < 3) return isoStr;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+function getMondayOfDate(dateObj) {
+  const d = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 12, 0, 0);
+  const day = d.getDay(); // 0=Dim, 1=Lun ... 6=Sam
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+function addDays(dateObj, n) {
+  const d = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 12, 0, 0);
+  d.setDate(d.getDate() + n);
+  return d;
+}
+
+function normalizeWeekTypeChar(val) {
+  const v = String(val || '').trim().toUpperCase();
+  if (v === '1' || v === 'A' || v === 'Q1' || v === 'SA' || v === 'SEMAINE A' || v === 'SEMAINE 1') return '1';
+  if (v === '2' || v === 'B' || v === 'Q2' || v === 'SB' || v === 'SEMAINE B' || v === 'SEMAINE 2') return '2';
+  // Si un calendrier EDT utilise 3 ou 4, on ramène en parité A/B
+  if (v === '3') return '1';
+  if (v === '4') return '2';
+  return '0';
+}
+
+function buildCalendarDataFromRecord(anneeStr, dateDebutISO, dateFinISO, rawSem, rawFeries, filename) {
+  const startObj = isoToLocalDate(dateDebutISO);
+  const firstMondayObj = getMondayOfDate(startObj);
+  const firstMondayISO = localDateToISO(firstMondayObj);
+
+  let cleanSem = (rawSem || '').replace(/[^0-9ABab]/g, '').split('').map(normalizeWeekTypeChar).join('');
+  const cleanFeries = (rawFeries || '').replace(/[^01]/g, '');
+
+  // Si la chaîne SEMAINES a été altérée par Excel (ex: notation scientifique 1,21E+44) ou est vide, on génère les semaines entre dateDebut et dateFin
+  if (cleanSem.length < 4) {
+    const endRefObj = dateFinISO ? isoToLocalDate(dateFinISO) : addDays(firstMondayObj, 44 * 7);
+    const totalW = Math.max(10, Math.min(54, Math.ceil((endRefObj - firstMondayObj) / (1000 * 60 * 60 * 24 * 7)) + 1));
+    const generated = [];
+    for (let i = 0; i < totalW; i++) {
+      generated.push(i % 2 === 0 ? '1' : '2');
+    }
+    cleanSem = generated.join('');
+  }
+
+  const weeksList = [];
+  let schoolWeekNum = 0;
+  for (let w = 0; w < cleanSem.length; w++) {
+    const wMonday = addDays(firstMondayObj, w * 7);
+    const wSunday = addDays(wMonday, 6);
+    const code = cleanSem[w];
+    if (code === '1' || code === '2') schoolWeekNum++;
+    weeksList.push({
+      index: w,
+      mondayISO: localDateToISO(wMonday),
+      sundayISO: localDateToISO(wSunday),
+      code,
+      schoolWeekNum: (code === '1' || code === '2') ? schoolWeekNum : null
+    });
+  }
+
+  const computedEndISO = dateFinISO || weeksList[weeksList.length - 1]?.sundayISO || dateDebutISO;
+
+  return {
+    filename: filename || 'EXP_CALENDRIER.csv',
+    annee: anneeStr || `${startObj.getFullYear()}-${startObj.getFullYear() + 1}`,
+    dateDebut: dateDebutISO,
+    firstMondayISO,
+    dateFin: computedEndISO,
+    semaines: cleanSem,
+    feries: cleanFeries,
+    weeksList
+  };
+}
+
+function parseFlexibleDateDateOrFallback(str, dateDebutISO, numWeeks) {
+  const parsed = parseFlexibleDateToISO(str);
+  if (parsed) return parsed;
+  if (!dateDebutISO) return null;
+  const startObj = isoToLocalDate(dateDebutISO);
+  const endObj = addDays(startObj, Math.max(1, numWeeks) * 7);
+  return localDateToISO(endObj);
+}
+
+function rebuildWeeksListIfNeeded() {
+  if (!calendarData) return;
+  if (Array.isArray(calendarData.weeksList) && calendarData.weeksList.length > 0 && calendarData.firstMondayISO) {
+    return;
+  }
+  const rebuilt = buildCalendarDataFromRecord(
+    calendarData.annee,
+    calendarData.dateDebut,
+    calendarData.dateFin,
+    calendarData.semaines,
+    calendarData.feries,
+    calendarData.filename
+  );
+  calendarData.firstMondayISO = rebuilt.firstMondayISO;
+  calendarData.weeksList = rebuilt.weeksList;
+  calendarData.dateFin = rebuilt.dateFin;
+}
+
+/**
+ * Parseur spécifique pour le calendrier EDT en grille mensuelle :
+ * Entête : "Septembre;Octobre;Novembre;Décembre;Janvier;Février;Mars;Avril;Mai;Juin;Juillet..."
+ */
+function parseMonthlyGridCalendarCSV(lines, filename) {
+  let sep = ';';
+  if (lines[0].split(';').length < 4 && lines[0].split(',').length >= 4) sep = ',';
+  else if (lines[0].split(';').length < 4 && lines[0].split('\t').length >= 4) sep = '\t';
+
+  const rawHeaders = parseCSVLine(lines[0], sep);
+  const monthNamesMap = {
+    'SEPTEMBRE': 9, 'OCTOBRE': 10, 'NOVEMBRE': 11, 'DECEMBRE': 12,
+    'JANVIER': 1, 'FEVRIER': 2, 'MARS': 3, 'AVRIL': 4, 'MAI': 5, 'JUIN': 6, 'JUILLET': 7, 'AOUT': 8
+  };
+
+  // Repérer à quelles colonnes correspondent les mois (certaines grilles ont 1, 2 ou 3 colonnes par mois)
+  const colToMonth = [];
+  let lastMonth = null;
+  rawHeaders.forEach((h, idx) => {
+    const norm = normalizeHeader(h);
+    let matchedMonth = null;
+    for (const [mName, mNum] of Object.entries(monthNamesMap)) {
+      if (norm.includes(mName)) {
+        matchedMonth = mNum;
+        break;
+      }
+    }
+    if (matchedMonth !== null) {
+      lastMonth = matchedMonth;
+      colToMonth[idx] = matchedMonth;
+    } else {
+      colToMonth[idx] = lastMonth; // Si colonnes fusionnées par mois
+    }
+  });
+
+  // Déterminer l'année scolaire (ex: 2025-2026)
+  // On cherche d'abord si une année apparaît dans le fichier ou le nom du fichier, sinon on déduit par le jour de la semaine du 1er septembre
+  const fullText = lines.join(' ');
+  let startYear = null;
+  const yearMatch = fullText.match(/\b(202[3-9])\s*[-/]\s*(202[4-9])\b/) || filename.match(/\b(202[3-9])\b/);
+  if (yearMatch) {
+    startYear = parseInt(yearMatch[1], 10);
+  }
+
+  // Analyser les lignes (jours 1 à 31) pour chaque mois
+  // On stocke pour chaque mois (1..12) et jour (1..31) le texte brut de la cellule
+  const monthDayText = {};
+  const dayNamesMap = { 'L': 1, 'LU': 1, 'LUN': 1, 'M': 2, 'MA': 2, 'MAR': 2, 'ME': 3, 'MER': 3, 'J': 4, 'JE': 4, 'JEU': 4, 'V': 5, 'VE': 5, 'VEN': 5, 'S': 6, 'SA': 6, 'SAM': 6, 'D': 0, 'DI': 0, 'DIM': 0 };
+
+  for (let r = 1; r < lines.length; r++) {
+    const cols = parseCSVLine(lines[r], sep);
+    // Regrouper les cellules appartenant au même mois sur cette ligne
+    const perMonthCells = {};
+    cols.forEach((val, cIdx) => {
+      const mNum = colToMonth[cIdx];
+      if (!mNum) return;
+      if (!perMonthCells[mNum]) perMonthCells[mNum] = [];
+      if (val) perMonthCells[mNum].push(val.trim());
+    });
+
+    for (const [mNumStr, cellParts] of Object.entries(perMonthCells)) {
+      const mNum = parseInt(mNumStr, 10);
+      const combined = cellParts.join(' ').trim();
+      if (!combined) continue;
+
+      // Identifier le numéro du jour : soit au début de la cellule (ex: "1 L", "01 Lun Q1"), soit le numéro de ligne r (si 1 <= r <= 31)
+      let dayNum = r <= 31 ? r : null;
+      const explicitDayMatch = combined.match(/^(\d{1,2})(?:\D|$)/);
+      if (explicitDayMatch) {
+        const dCandidate = parseInt(explicitDayMatch[1], 10);
+        if (dCandidate >= 1 && dCandidate <= 31) dayNum = dCandidate;
+      }
+      if (!dayNum || dayNum < 1 || dayNum > 31) continue;
+
+      if (!monthDayText[`${mNum}_${dayNum}`]) {
+        monthDayText[`${mNum}_${dayNum}`] = combined;
+      } else {
+        monthDayText[`${mNum}_${dayNum}`] += ' ' + combined;
+      }
+
+      // Si startYear n'est pas encore connu, tenter de le déduire via le jour de la semaine du 1er Septembre
+      if (!startYear && mNum === 9 && dayNum === 1) {
+        const wMatch = combined.toUpperCase().match(/\b(LUN(?:DI)?|MAR(?:DI)?|MER(?:CREDI)?|JEU(?:DI)?|VEN(?:DREDI)?|SAM(?:EDI)?|DIM(?:ANCHE)?|LU|MA|ME|JE|VE|SA|DI)\b/);
+        if (wMatch) {
+          const prefix = wMatch[1].slice(0, 3);
+          const targetDow = dayNamesMap[prefix] ?? dayNamesMap[wMatch[1].slice(0, 2)];
+          if (targetDow !== undefined) {
+            for (let y = 2025; y <= 2030; y++) {
+              if (new Date(y, 8, 1, 12, 0, 0).getDay() === targetDow) {
+                startYear = y;
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (!startYear) startYear = 2025; // Année scolaire par défaut 2025-2026
+
+  const dateDebutISO = `${startYear}-09-01`;
+  const dateFinISO = `${startYear + 1}-07-11`;
+  const firstMondayObj = getMondayOfDate(isoToLocalDate(dateDebutISO));
+  const endObj = isoToLocalDate(dateFinISO);
+
+  // Fonction d'interprétation d'une cellule jour d'EDT
+  function analyzeDayCell(cellStr) {
+    if (!cellStr) return { weekType: null, isHoliday: false };
+    const u = cellStr.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const isHoliday = /\b(FERIE|VACANCES|CONGE|PONT|TOUSSAINT|NOEL|HIVER|PAQUES|PRINTEMPS|ASCENSION|PENTECOTE|ARMISTICE|TOUS)\b/.test(u);
+    let weekType = null;
+    if (/\b(Q1|SEMAINE\s*A|SEM\s*A|SEMAINE\s*1|SEM\s*1|SA|S1)\b/.test(u) || /(?:^|[\s\-;/(\[])(A|Q1)(?:$|[\s\-;/)\]])/.test(u)) {
+      weekType = '1';
+    } else if (/\b(Q2|SEMAINE\s*B|SEM\s*B|SEMAINE\s*2|SEM\s*2|SB|S2)\b/.test(u) || /(?:^|[\s\-;/(\[])(B|Q2)(?:$|[\s\-;/)\]])/.test(u)) {
+      weekType = '2';
+    }
+    return { weekType, isHoliday, raw: cellStr };
+  }
+
+  // Parcourir chaque semaine du premier lundi jusqu'à la fin juillet
+  const weeksList = [];
+  const semChars = [];
+  let schoolWeekNum = 0;
+  let lastValidCode = '2'; // Pour alterner proprement si une semaine de cours n'a pas d'étiquette explicite Q1/Q2
+
+  const totalWeeks = Math.ceil((endObj - firstMondayObj) / (1000 * 60 * 60 * 24 * 7)) + 1;
+  for (let w = 0; w < totalWeeks; w++) {
+    const wMonday = addDays(firstMondayObj, w * 7);
+    const wSunday = addDays(wMonday, 6);
+
+    let detectedWeekCode = null;
+    let holidayDaysCount = 0;
+    let nonEmptyDaysCount = 0;
+
+    for (let dOffset = 0; dOffset < 6; dOffset++) {
+      const cur = addDays(wMonday, dOffset);
+      const m = cur.getMonth() + 1;
+      const d = cur.getDate();
+      const cellText = monthDayText[`${m}_${d}`] || '';
+      if (cellText) nonEmptyDaysCount++;
+      const info = analyzeDayCell(cellText);
+      if (info.weekType && !detectedWeekCode) {
+        detectedWeekCode = info.weekType;
+      }
+      if (info.isHoliday) {
+        holidayDaysCount++;
+      }
+    }
+
+    let finalCode = '0';
+    if (detectedWeekCode) {
+      finalCode = detectedWeekCode;
+      lastValidCode = finalCode;
+    } else if (holidayDaysCount >= 4) {
+      finalCode = '0';
+    } else if (nonEmptyDaysCount > 0) {
+      // S'il y a du contenu de cours mais pas de marqueur explicite, on alterne A / B
+      finalCode = lastValidCode === '1' ? '2' : '1';
+      lastValidCode = finalCode;
+    }
+
+    if (finalCode === '1' || finalCode === '2') schoolWeekNum++;
+    semChars.push(finalCode);
+
+    weeksList.push({
+      index: w,
+      mondayISO: localDateToISO(wMonday),
+      sundayISO: localDateToISO(wSunday),
+      code: finalCode,
+      schoolWeekNum: (finalCode === '1' || finalCode === '2') ? schoolWeekNum : null
+    });
+  }
+
+  // Construire la chaîne FERIES jour par jour depuis dateDebutISO
+  const startDayObj = isoToLocalDate(dateDebutISO);
+  const totalDays = Math.ceil((endObj - startDayObj) / (1000 * 60 * 60 * 24)) + 1;
+  const feriesArr = [];
+  for (let i = 0; i < totalDays; i++) {
+    const cur = addDays(startDayObj, i);
+    const cellText = monthDayText[`${cur.getMonth() + 1}_${cur.getDate()}`] || '';
+    const info = analyzeDayCell(cellText);
+    feriesArr.push(info.isHoliday ? '1' : '0');
+  }
+
+  return {
+    filename: filename || 'EXP_CALENDRIER.csv',
+    annee: `${startYear}-${startYear + 1}`,
+    dateDebut: dateDebutISO,
+    firstMondayISO: localDateToISO(firstMondayObj),
+    dateFin: dateFinISO,
+    semaines: semChars.join(''),
+    feries: feriesArr.join(''),
+    weeksList
+  };
+}
+
+function loadCalendarCSV(text, filename) {
+  const cleanedText = (text || '').replace(/^\uFEFF/, '').replace(/\0/g, '');
+  const lines = cleanedText.split(/\r\n|\r|\n/).map(l => l.trim()).filter(l => l.length > 0);
+  if (lines.length < 1) return showToast('⚠️ Fichier Calendrier CSV vide.');
+
+  // 0. Sécurité : vérifier si c'est en réalité un fichier de cours (EXP_COURS.csv)
+  const upperHeader = normalizeHeader(lines[0]);
+  if ((upperHeader.includes('NUMERO') && upperHeader.includes('JOUR')) || upperHeader.includes('MAT_CODE') || upperHeader.includes('PROF_NOM')) {
+    loadCSV(cleanedText, filename);
+    return;
+  }
+
+  // 0 bis. Détection directe du format Grille Mensuelle d'EDT ("Septembre;Octobre;Novembre...")
+  if (upperHeader.includes('SEPTEMBRE') && upperHeader.includes('OCTOBRE')) {
+    calendarData = parseMonthlyGridCalendarCSV(lines, filename);
+    updateCalendarUI();
+    autoSelectFirstSchoolWeek();
+    triggerAutosave();
+    showToast(`📅 Calendrier mensuel EDT "${filename}" importé (${calendarData.annee}) : ${calendarData.weeksList.length} semaines prêtes !`);
+    return;
+  }
+
+  // 1. Extracteur universel par jetons (indépendant de l'ordre des colonnes, des guillemets Excel "" ou du séparateur)
+  const allDataText = lines.length >= 2 ? lines.slice(1).join(' ; ') : lines[0];
+  const rawTokens = allDataText.split(/[;,\t|]+/).map(t => t.replace(/^["'\s]+|["'\s]+$/g, '').trim()).filter(Boolean);
+
+  let detectedAnnee = '';
+  const detectedDates = [];
+  const binaryStrings = [];
+
+  rawTokens.forEach(tok => {
+    if (/^\d{4}\s*[-/]\s*\d{4}$/.test(tok)) {
+      if (!detectedAnnee) detectedAnnee = tok.replace(/\s+/g, '');
+      return;
+    }
+    const iso = parseFlexibleDateToISO(tok);
+    if (iso) {
+      detectedDates.push(iso);
+      return;
+    }
+    const cleanSeq = tok.replace(/["'\s]/g, '');
+    if (/^[0-9ABab]{6,}$/.test(cleanSeq)) {
+      binaryStrings.push(cleanSeq);
+    }
+  });
+
+  // Recherche complémentaire par regex globale sur tout le fichier (y compris la 1ère ligne si pas d'entête)
+  if (detectedDates.length === 0) {
+    const dateMatches = [...cleanedText.matchAll(/\b(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.](?:\d{4}|\d{2}))\b/g)];
+    dateMatches.forEach(m => {
+      const iso = parseFlexibleDateToISO(m[1]);
+      if (iso && !detectedDates.includes(iso)) detectedDates.push(iso);
+    });
+  }
+  if (binaryStrings.length === 0) {
+    const seqMatches = [...cleanedText.matchAll(/[0-9ABab]{8,}/g)];
+    seqMatches.forEach(m => {
+      if (!/^\d{8}$/.test(m[0])) binaryStrings.push(m[0]);
+    });
+  }
+
+  // Même si Excel a transformé SEMAINES en notation scientifique, dès qu'on a au moins 1 date (ou l'année scolaire), on construit le calendrier
+  if (detectedDates.length >= 1 || binaryStrings.length >= 1 || detectedAnnee) {
+    const fallbackYear = detectedAnnee ? detectedAnnee.split(/[-/]/)[0] : new Date().getFullYear();
+    const dateDebutISO = detectedDates[0] || `${fallbackYear}-09-01`;
+    const dateFinISO = detectedDates[1] || null;
+
+    let rawSem = binaryStrings[0] || '';
+    let rawFeries = binaryStrings[1] || '';
+    if (binaryStrings.length >= 2 && binaryStrings[0].length > 80 && binaryStrings[1].length <= 60) {
+      rawSem = binaryStrings[1];
+      rawFeries = binaryStrings[0];
+    } else if (binaryStrings.length === 1 && binaryStrings[0].length > 80) {
+      // Si seule la longue chaîne FERIES (300+ car.) est restée intacte
+      rawFeries = binaryStrings[0];
+      rawSem = '';
+    }
+
+    calendarData = buildCalendarDataFromRecord(detectedAnnee, dateDebutISO, dateFinISO, rawSem, rawFeries, filename);
+    updateCalendarUI();
+    autoSelectFirstSchoolWeek();
+    triggerAutosave();
+    showToast(`📅 Calendrier EDT "${filename}" importé (${calendarData.annee}) : ${calendarData.weeksList.length} semaines prêtes !`);
+    return;
+  }
+
+  // 2. Format tableau multi-lignes (une ligne par semaine avec une date par ligne)
+  let sep = ';';
+  if (lines[0].split(';').length < 2 && lines[0].split(',').length >= 2) sep = ',';
+  else if (lines[0].split(';').length < 2 && lines[0].split('\t').length >= 2) sep = '\t';
+
+  const headers = parseCSVLine(lines[0], sep).map(normalizeHeader);
+  const idxSemaines = headers.findIndex(h => h.includes('SEMAINE') || h.includes('QUINZAINE') || h.includes('ALTERNANCE') || h.includes('TYPE'));
+
+  if (lines.length > 2) {
+    const parsedWeeks = [];
+    let schoolWeekNum = 0;
+    for (let i = 1; i < lines.length; i++) {
+      const cols = parseCSVLine(lines[i], sep);
+      let foundDateISO = null;
+      let foundCode = null;
+      cols.forEach((col, cIdx) => {
+        const maybeISO = parseFlexibleDateToISO(col);
+        if (maybeISO && !foundDateISO) foundDateISO = maybeISO;
+        else if (cIdx === idxSemaines || /^(1|2|A|B|Q1|Q2|SA|SB|SEMAINE\s*[AB12])$/i.test(col.trim())) {
+          foundCode = normalizeWeekTypeChar(col);
+        }
+      });
+      if (foundDateISO) {
+        const monObj = getMondayOfDate(isoToLocalDate(foundDateISO));
+        const sunObj = addDays(monObj, 6);
+        const code = foundCode || '0';
+        if (code === '1' || code === '2') schoolWeekNum++;
+        parsedWeeks.push({
+          index: parsedWeeks.length,
+          mondayISO: localDateToISO(monObj),
+          sundayISO: localDateToISO(sunObj),
+          code,
+          schoolWeekNum: (code === '1' || code === '2') ? schoolWeekNum : null
+        });
+      }
+    }
+
+    if (parsedWeeks.length > 0) {
+      calendarData = {
+        filename,
+        annee: filename.replace(/\.[^.]+$/, ''),
+        dateDebut: parsedWeeks[0].mondayISO,
+        firstMondayISO: parsedWeeks[0].mondayISO,
+        dateFin: parsedWeeks[parsedWeeks.length - 1].sundayISO,
+        semaines: parsedWeeks.map(w => w.code).join(''),
+        feries: '',
+        weeksList: parsedWeeks
+      };
+      updateCalendarUI();
+      autoSelectFirstSchoolWeek();
+      triggerAutosave();
+      showToast(`📅 Calendrier multi-semaines chargé : ${parsedWeeks.length} semaines détectées.`);
+      return;
+    }
+  }
+
+  const preview = (lines[0] || '').slice(0, 45);
+  showToast(`⚠️ Fichier "${filename}" non reconnu comme calendrier (entête lu : "${preview}").`);
+}
+
+function autoSelectFirstSchoolWeek() {
+  if (!calendarData || !Array.isArray(calendarData.weeksList)) return;
+  const firstActive = calendarData.weeksList.find(w => w.code === '1' || w.code === '2');
+  if (firstActive) {
+    const weekSelect = document.getElementById('examCalendarWeekSelect');
+    if (weekSelect) {
+      weekSelect.value = String(firstActive.index);
+      onCalendarWeekSelectChange();
+    }
+  }
+}
+
+function updateCalendarUI() {
+  if (!calendarData) return;
+  rebuildWeeksListIfNeeded();
+
+  const badge = document.getElementById('calendarStatusBadge');
+  badge.textContent = `📅 Calendrier actif (${calendarData.annee || 'EDT'})`;
+  badge.className = 'px-3 py-1 rounded-full text-[11px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-300';
+
+  const row = document.getElementById('calendarPickerRow');
+  row.classList.remove('hidden');
+
+  // Peupler la liste déroulante des semaines du calendrier
+  const weekSelect = document.getElementById('examCalendarWeekSelect');
+  if (weekSelect) {
+    let optionsHtml = `<option value="">— Choisir parmi les ${calendarData.weeksList.length} semaines du calendrier —</option>`;
+    calendarData.weeksList.forEach(w => {
+      const tag = w.code === '1'
+        ? `🟪 Semaine A (Q1)${w.schoolWeekNum ? ` • Sem. cours n°${w.schoolWeekNum}` : ''}`
+        : w.code === '2'
+        ? `🟦 Semaine B (Q2)${w.schoolWeekNum ? ` • Sem. cours n°${w.schoolWeekNum}` : ''}`
+        : `🏖️ Vacances / Hors cours`;
+      optionsHtml += `<option value="${w.index}">Sem. du ${formatDateFR(w.mondayISO)} au ${formatDateFR(w.sundayISO)} — ${tag}</option>`;
+    });
+    weekSelect.innerHTML = optionsHtml;
+  }
+
+  const dateInput = document.getElementById('examCalendarDate');
+  dateInput.min = calendarData.firstMondayISO || calendarData.dateDebut;
+  dateInput.max = calendarData.dateFin;
+}
+
+function onCalendarWeekSelectChange() {
+  if (!calendarData) return;
+  rebuildWeeksListIfNeeded();
+  const val = document.getElementById('examCalendarWeekSelect').value;
+  if (val === '') return;
+
+  const wIdx = parseInt(val, 10);
+  const wObj = calendarData.weeksList[wIdx];
+  if (!wObj) return;
+
+  // Positionner la date sur le jour actuellement sélectionné (Lundi..Vendredi) dans cette semaine
+  const currentDay = document.getElementById('examDay').value || 'lundi';
+  const dayOffsetMap = { lundi: 0, mardi: 1, mercredi: 2, jeudi: 3, vendredi: 4 };
+  const offset = dayOffsetMap[currentDay] ?? 0;
+  const targetDateObj = addDays(isoToLocalDate(wObj.mondayISO), offset);
+  const targetISO = localDateToISO(targetDateObj);
+
+  document.getElementById('examCalendarDate').value = targetISO;
+  evaluateCalendarDate(targetISO);
+}
+
+function onCalendarDateChange() {
+  if (!calendarData) return;
+  const dateStr = document.getElementById('examCalendarDate').value;
+  if (!dateStr) return;
+  evaluateCalendarDate(dateStr);
+}
+
+function onExamDayChange() {
+  const newDay = document.getElementById('examDay').value || 'lundi';
+  const dayOffsetMap = { lundi: 0, mardi: 1, mercredi: 2, jeudi: 3, vendredi: 4 };
+  const offset = dayOffsetMap[newDay] ?? 0;
+
+  if (calendarData) {
+    rebuildWeeksListIfNeeded();
+    const weekSelectVal = document.getElementById('examCalendarWeekSelect')?.value;
+    const currentDateVal = document.getElementById('examCalendarDate')?.value;
+
+    let mondayObj = null;
+    if (currentDateVal) {
+      mondayObj = getMondayOfDate(isoToLocalDate(currentDateVal));
+    } else if (weekSelectVal !== '' && weekSelectVal !== undefined && calendarData.weeksList[parseInt(weekSelectVal, 10)]) {
+      mondayObj = isoToLocalDate(calendarData.weeksList[parseInt(weekSelectVal, 10)].mondayISO);
+    }
+
+    if (mondayObj) {
+      const targetDateObj = addDays(mondayObj, offset);
+      const targetISO = localDateToISO(targetDateObj);
+      const dateInput = document.getElementById('examCalendarDate');
+      if (dateInput) dateInput.value = targetISO;
+      evaluateCalendarDate(targetISO);
+      return;
+    }
+  }
+
+  if (hasLoadedFile) {
+    computeExamSupervisors();
+  }
+}
+
+function evaluateCalendarDate(dateStr) {
+  if (!calendarData || !dateStr) return;
+  rebuildWeeksListIfNeeded();
+  const chosen = isoToLocalDate(dateStr);
+  const startDayObj = isoToLocalDate(calendarData.dateDebut);
+  const firstMondayObj = isoToLocalDate(calendarData.firstMondayISO || calendarData.dateDebut);
+
+  const diffFromFirstMonday = Math.round((chosen - firstMondayObj) / (1000 * 60 * 60 * 24));
+  const diffFromDateDebut = Math.round((chosen - startDayObj) / (1000 * 60 * 60 * 24));
+
+  const infoEl = document.getElementById('calendarDateInfo');
+  if (diffFromFirstMonday < 0) {
+    if (infoEl) {
+      infoEl.innerHTML = `<span class="text-red-600">⚠️ Date antérieure au début du calendrier (${formatDateFR(calendarData.dateDebut)}).</span>`;
+    }
+    return;
+  }
+
+  const weekIdx = Math.floor(diffFromFirstMonday / 7);
+  const wObj = Array.isArray(calendarData.weeksList) ? calendarData.weeksList[weekIdx] : null;
+  const fallbackSemChar = calendarData.semaines ? calendarData.semaines[weekIdx] : '0';
+  const weekTypeChar = wObj ? wObj.code : normalizeWeekTypeChar(fallbackSemChar);
+
+  // Synchroniser le menu déroulant des semaines
+  const weekSelect = document.getElementById('examCalendarWeekSelect');
+  if (weekSelect && wObj) {
+    weekSelect.value = String(weekIdx);
+  }
+
+  // Vérification jour férié dans la chaîne FERIES (indexée depuis DATEDEBUT)
+  let isFerie = false;
+  if (calendarData.feries && diffFromDateDebut >= 0 && diffFromDateDebut < calendarData.feries.length) {
+    isFerie = calendarData.feries[diffFromDateDebut] === '1';
+  }
+
+  const jsDay = chosen.getDay(); // 0=Dim, 1=Lun ... 5=Ven, 6=Sam
+  const dayMap = { 1: 'lundi', 2: 'mardi', 3: 'mercredi', 4: 'jeudi', 5: 'vendredi' };
+  const mappedDay = dayMap[jsDay];
+
+  selectedCalendarEntry = {
+    dateStr,
+    diffDays: diffFromDateDebut,
+    weekIdx: weekIdx + 1,
+    schoolWeekCount: wObj?.schoolWeekNum || null,
+    weekTypeChar,
+    isFerie,
+    mappedDay,
+    isWeekend: (jsDay === 0 || jsDay === 6)
+  };
+
+  if (mappedDay) {
+    document.getElementById('examDay').value = mappedDay;
+  }
+
+  if (weekTypeChar === '1') {
+    document.getElementById('examWeek').value = 'Q1';
+  } else if (weekTypeChar === '2') {
+    document.getElementById('examWeek').value = 'Q2';
+  }
+
+  const labelSem = weekTypeChar === '1'
+    ? '🟪 Semaine A (H + Q1)'
+    : weekTypeChar === '2'
+    ? '🟦 Semaine B (H + Q2)'
+    : '🏖️ Vacances / Hors cours';
+  const ferieBadge = isFerie
+    ? `<span class="px-2 py-0.5 rounded bg-red-600 text-white text-[10px] font-black ml-2">🚫 JOUR FÉRIÉ / CONGÉ</span>`
+    : '';
+  const weekendBadge = selectedCalendarEntry.isWeekend
+    ? `<span class="px-2 py-0.5 rounded bg-amber-500 text-blue-950 text-[10px] font-black ml-2">⚠️ WEEK-END</span>`
+    : '';
+  const schoolNumText = wObj?.schoolWeekNum ? ` (Semaine de cours n°${wObj.schoolWeekNum})` : '';
+
+  if (infoEl) {
+    infoEl.innerHTML = `
+      <span>📌 <strong>${formatDateFR(dateStr)}</strong> : Semaine du ${formatDateFR(wObj?.mondayISO || dateStr)} au ${formatDateFR(wObj?.sundayISO || dateStr)}${schoolNumText} • <strong>${labelSem}</strong> ${ferieBadge}${weekendBadge}</span>
+    `;
+  }
+
+  if (hasLoadedFile) {
+    try {
+      computeExamSupervisors();
+    } catch (calcErr) {
+      console.error('Erreur recalcul surveillances:', calcErr);
+    }
+  }
+}
+
+function clearCalendarDateSelection() {
+  selectedCalendarEntry = null;
+  document.getElementById('examCalendarDate').value = '';
+  const weekSelect = document.getElementById('examCalendarWeekSelect');
+  if (weekSelect) weekSelect.value = '';
+  document.getElementById('calendarDateInfo').textContent = 'Mode manuel actif : choisissez librement le jour et la semaine ci-dessous.';
+  if (hasLoadedFile) computeExamSupervisors();
+}
+
+function finalizeLoadedUI() {
+  const badge = document.getElementById('datasetBadge');
+  if (courses.length > 0) {
+    badge.textContent = `✅ ${currentDatasetName} (${courses.length} cours • ${allProfs.length} profs)`;
+    badge.className = 'px-3 py-0.5 text-[11px] font-extrabold rounded-full bg-amber-400 text-blue-950 shadow-xs';
+  } else {
+    badge.textContent = `${allProfs.length} prof(s) enregistré(s)`;
+  }
+  dismissAutosaveBanner();
+  renderProfList();
+  renderVoeuxGrid();
+  renderBilanGrid();
+  if (currentStep === 2 && hasLoadedFile) {
+    computeExamSupervisors();
+  }
+}
+
+function weeksConflict(altA, altB) {
+  if (altA === altB) return true;
+  if ((altA === 'Q1' && altB === 'Q2') || (altA === 'Q2' && altB === 'Q1')) return false;
+  if ((altA === 'S1' && altB === 'S2') || (altA === 'S2' && altB === 'S1')) return false;
+  return true;
+}
+
+/**
+ * STEP 1 : PRÉPA N+1 (VŒUX & BILAN)
+ */
+function setBrush(color) {
+  activeBrush = color;
+  ['GREEN', 'ORANGE', 'SA', 'SB', 'RED'].forEach(c => {
+    const btn = document.getElementById(`brush-${c}`);
+    if (!btn) return;
+    if (c === color) btn.classList.add('ring-2', 'ring-blue-500', 'scale-[1.04]');
+    else btn.classList.remove('ring-2', 'ring-blue-500', 'scale-[1.04]');
+  });
+}
+
+function paintPeriodDay(day, period) {
+  const targets = checkedProfs.size > 0 ? [...checkedProfs] : (selectedProf ? [selectedProf] : []);
+  if (!targets.length) return showToast('⚠️ Sélectionnez au moins un professeur.');
+  const slots = period === 'AM' ? [0, 1, 2, 3, 4] : [6, 7, 8];
+  targets.forEach(p => {
+    slots.forEach(sIdx => setConstraint(p, day, sIdx, activeBrush));
+  });
+  renderVoeuxGrid();
+  renderProfList();
+  renderBilanGrid();
+  const labelP = period === 'AM' ? 'Matinée' : 'Après-midi';
+  showToast(`🎨 ${labelP} du ${day} coloriée (${activeBrush}) pour ${targets.length} prof(s).`);
+}
+
+function getConstraint(prof, day, slotIdx) {
+  return (teacherConstraints[prof] && teacherConstraints[prof][`${day}_${slotIdx}`]) || 'GREEN';
+}
+
+function setConstraint(prof, day, slotIdx, color) {
+  const key = `${day}_${slotIdx}`;
+  if (color === 'GREEN') delete teacherConstraints[prof][key];
+  else teacherConstraints[prof][key] = color;
+  triggerAutosave();
+}
+
+function applyGlobalConstraint(slotIdx, color) {
+  const targets = [...checkedProfs];
+  if (!targets.length) return showToast('⚠️ Aucun professeur coché dans la liste.');
+  targets.forEach(p => DAYS.forEach(d => {
+    if (slotIdx === 8 && d === 'mercredi') return;
+    setConstraint(p, d, slotIdx, color);
+  }));
+  renderProfList(); 
+  renderVoeuxGrid(); 
+  renderBilanGrid();
+  showToast(`Contrainte globale appliquée pour ${targets.length} professeur(s).`);
+}
+
+function clearSelectedProfsConstraints() {
+  const targets = [...checkedProfs];
+  targets.forEach(p => teacherConstraints[p] = {});
+  triggerAutosave();
+  renderProfList(); 
+  renderVoeuxGrid(); 
+  renderBilanGrid();
+  showToast(`Vœux remis à zéro pour ${targets.length} professeur(s).`);
+}
+
+function toggleProf(prof, checked) {
+  if (checked) checkedProfs.add(prof); 
+  else checkedProfs.delete(prof);
+  renderProfList();
+}
+
+function selectProf(prof) { 
+  selectedProf = prof; 
+  renderProfList(); 
+  renderVoeuxGrid(); 
+}
+
+function toggleAllProfs() {
+  const search = document.getElementById('profSearch').value.toLowerCase();
+  const filtered = allProfs.filter(p => p.toLowerCase().includes(search));
+  const allChecked = filtered.length > 0 && filtered.every(p => checkedProfs.has(p));
+  
+  filtered.forEach(p => {
+    if (allChecked) checkedProfs.delete(p);
+    else checkedProfs.add(p);
+  });
+  renderProfList();
+}
+
+function renderProfList() {
+  const search = document.getElementById('profSearch').value.toLowerCase();
+  const filtered = allProfs.filter(p => p.toLowerCase().includes(search));
+  const container = document.getElementById('profList');
+  const countLabel = document.getElementById('profCountLabel');
+  if (countLabel) countLabel.textContent = allProfs.length;
+  const printCheckedEl = document.getElementById('printCheckedCount');
+  if (printCheckedEl) printCheckedEl.textContent = checkedProfs.size;
+  
+  if (allProfs.length === 0) {
+    container.innerHTML = `
+      <div class="p-4 text-center text-slate-400 text-xs space-y-2">
+        <div>Aucun professeur dans la liste.</div>
+        <div class="text-[10px]">Ajoutez un professeur ci-dessus ou cliquez sur <strong>📋 Liste +</strong> pour coller vos noms.</div>
+      </div>
+    `;
+    return;
+  }
+
+  const allChecked = filtered.length > 0 && filtered.every(p => checkedProfs.has(p));
+  
+  let html = `
+    <div class="flex items-center justify-between px-1 pb-1.5 mb-1.5 border-b border-blue-100">
+      <label class="flex items-center gap-1.5 text-[10px] font-extrabold text-blue-900 cursor-pointer">
+        <input type="checkbox" ${allChecked ? 'checked' : ''} onchange="toggleAllProfs()" class="w-3.5 h-3.5 accent-blue-700 rounded cursor-pointer">
+        <span>Tout cocher</span>
+      </label>
+      <span class="text-[9px] text-slate-500 font-bold bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">${checkedProfs.size} coché(s)</span>
+    </div>
+  `;
+  
+  html += filtered.map(p => {
+    const isActive = p === selectedProf;
+    const isChecked = checkedProfs.has(p);
+    const paints = Object.keys(teacherConstraints[p] || {}).length;
+    const safeP = p.replace(/'/g,"\\'");
+    return `
+      <div class="p-2 rounded-xl border text-left flex items-center gap-2 cursor-pointer transition ${isActive ? 'bg-gradient-to-r from-blue-800 to-blue-700 text-white border-blue-800 shadow-sm' : 'bg-white hover:bg-blue-50 text-slate-800 border-blue-100'}" onclick="selectProf('${safeP}')">
+        <input type="checkbox" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation(); toggleProf('${safeP}', this.checked)" class="w-3.5 h-3.5 accent-amber-500 rounded cursor-pointer">
+        <div class="flex-1 truncate">
+          <div class="font-bold text-xs truncate">${p}</div>
+          ${paints > 0 ? `<div class="text-[9px] ${isActive ? 'text-amber-300' : 'text-amber-600'}">${paints} vœu(x) saisis</div>` : ''}
+        </div>
+        <button type="button" onclick="event.stopPropagation(); deleteSingleProf('${safeP}')" class="text-[10px] opacity-60 hover:opacity-100 px-1.5 py-0.5 rounded ${isActive ? 'hover:bg-red-500 text-white' : 'hover:bg-red-100 text-red-600'}" title="Supprimer ce professeur">✕</button>
+      </div>
+    `;
+  }).join('');
+  
+  container.innerHTML = html;
+}
+
+/**
+ * Rendu visuel d'une cellule de vœu :
+ * - Indispo SA (Semaine A) est positionnée à GAUCHE
+ * - Indispo SB (Semaine B) est positionnée à DROITE
+ */
+function renderConstraintCellHtml(col, compact = false) {
+  const py = compact ? 'py-1' : 'py-1.5';
+  const textSz = compact ? 'text-[9.5px]' : 'text-[10.5px]';
+
+  if (col === 'SA') {
+    return `
+      <div class="grid grid-cols-2 rounded-xl overflow-hidden border border-purple-400 shadow-2xs ${textSz} font-extrabold text-center">
+        <div class="bg-purple-200/90 text-purple-950 ${py} px-1 border-r border-purple-300">🟪 Indispo SA</div>
+        <div class="bg-emerald-50/70 text-emerald-700/80 ${py} px-1 font-semibold">Dispo SB</div>
+      </div>
+    `;
+  }
+  if (col === 'SB') {
+    return `
+      <div class="grid grid-cols-2 rounded-xl overflow-hidden border border-sky-400 shadow-2xs ${textSz} font-extrabold text-center">
+        <div class="bg-emerald-50/70 text-emerald-700/80 ${py} px-1 border-r border-sky-300 font-semibold">Dispo SA</div>
+        <div class="bg-sky-200/90 text-sky-950 ${py} px-1">🟦 Indispo SB</div>
+      </div>
+    `;
+  }
+  if (col === 'RED') {
+    return `
+      <div class="px-2.5 ${py} rounded-xl border text-red-900 border-red-300 bg-red-100 ${textSz} font-extrabold text-center shadow-2xs">
+        🟥 Indisponible (SA+SB)
+      </div>
+    `;
+  }
+  if (col === 'ORANGE') {
+    return `
+      <div class="px-2.5 ${py} rounded-xl border text-amber-900 border-amber-300 bg-amber-100 ${textSz} font-extrabold text-center shadow-2xs">
+        🟧 À éviter
+      </div>
+    `;
+  }
+  return `
+    <div class="px-2.5 ${py} rounded-xl border text-emerald-800 border-emerald-200 bg-emerald-100/80 ${textSz} font-extrabold text-center shadow-2xs">
+      🟩 Disponible
+    </div>
+  `;
+}
+
+function renderVoeuxGrid() {
+  const tbody = document.getElementById('voeuxGridBody');
+  if (!selectedProf) {
+    document.getElementById('activeProfTitle').textContent = 'Aucun professeur sélectionné';
+    tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400 italic">Ajoutez ou sélectionnez un professeur à gauche pour saisir ses vœux N+1.</td></tr>`;
+    return;
+  }
+  document.getElementById('activeProfTitle').textContent = selectedProf;
+  tbody.innerHTML = '';
+
+  const cellBgMap = {
+    GREEN:  'bg-emerald-50/50 hover:bg-emerald-100/70',
+    ORANGE: 'bg-amber-50 hover:bg-amber-100',
+    SA:     'bg-gradient-to-r from-purple-100/90 via-purple-50/60 to-emerald-50/40 hover:from-purple-200/80',
+    SB:     'bg-gradient-to-r from-emerald-50/40 via-sky-50/60 to-sky-100/90 hover:to-sky-200/80',
+    RED:    'bg-red-50 hover:bg-red-100'
+  };
+
+  MAIN_SLOTS.forEach((slot, sIdx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="p-2.5 font-extrabold text-blue-950 bg-blue-50/40 border-r border-blue-100 align-middle">${slot.label}</td>`;
+    
+    DAYS.forEach(day => {
+      const col = getConstraint(selectedProf, day, sIdx);
+      const cellBg = cellBgMap[col] || cellBgMap.GREEN;
+      const td = document.createElement('td');
+      
+      td.className = `p-2 border-r border-blue-100/80 cursor-pointer align-middle transition ${cellBg}`;
+      
+      const applyPaint = () => {
+        const targets = checkedProfs.size > 0 ? [...checkedProfs] : [selectedProf];
+        targets.forEach(p => setConstraint(p, day, sIdx, activeBrush));
+        renderVoeuxGrid(); 
+        renderProfList(); 
+        renderBilanGrid();
+      };
+
+      td.onmousedown = () => {
+        isMouseDownPaint = true;
+        applyPaint();
+      };
+      td.onmouseenter = () => {
+        if (isMouseDownPaint) {
+          applyPaint();
+        }
+      };
+
+      td.innerHTML = renderConstraintCellHtml(col, false);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+window.addEventListener('mouseup', () => { 
+  isMouseDownPaint = false; 
+});
+
+function renderBilanGrid() {
+  const tbody = document.getElementById('bilanGridBody');
+  tbody.innerHTML = '';
+  const totalProfs = allProfs.length;
+  const metaEl = document.getElementById('bilanPrintMeta');
+  if (metaEl) {
+    metaEl.textContent = `Effectif analysé : ${totalProfs} professeur(s) • Édité le ${new Date().toLocaleDateString('fr-FR')}`;
+  }
+
+  if (totalProfs === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400 italic">Ajoutez des professeurs dans l'onglet A pour visualiser le tableau de contrôle des créneaux.</td></tr>`;
+    return;
+  }
+  
+  MAIN_SLOTS.forEach((slot, sIdx) => {
+    let trHtml = `<td class="p-2.5 font-extrabold text-blue-950 bg-blue-50/40 border-r border-blue-100 align-top">${slot.label}</td>`;
+    
+    DAYS.forEach(day => {
+      // Agrégation purement basée sur les vœux des professeurs (aucune dépendance aux cours)
+      let countRed = 0, countSA = 0, countSB = 0, countOrange = 0;
+      allProfs.forEach(p => {
+        const col = getConstraint(p, day, sIdx);
+        if (col === 'RED') countRed++;
+        else if (col === 'SA') countSA++;
+        else if (col === 'SB') countSB++;
+        else if (col === 'ORANGE') countOrange++;
+      });
+      
+      const indispoSA = countRed + countSA;
+      const indispoSB = countRed + countSB;
+
+      const dispoSA = totalProfs - indispoSA;
+      const dispoSB = totalProfs - indispoSB;
+
+      // Disponibilité effective en tenant compte de la demi-pondération des vœux "À éviter"
+      const effDispoSA = dispoSA - Math.ceil(countOrange * 0.5);
+      const effDispoSB = dispoSB - Math.ceil(countOrange * 0.5);
+      const minDispo = Math.min(dispoSA, dispoSB);
+      const minEffDispo = Math.min(effDispoSA, effDispoSB);
+
+      const ratioDispo = Math.round((minEffDispo / totalProfs) * 100);
+
+      // Classification tricolore (Vert >= 75%, Orange 60-74%, Rouge < 60%)
+      let statusBg = 'bg-emerald-50/80 border-2 border-emerald-400';
+      let statusBadge = `<div class="mt-1.5 bg-emerald-600 text-white font-black py-1 px-2 rounded-lg text-center text-[10px] uppercase shadow-2xs">🟩 Bien servi (${ratioDispo}% dispo)</div>`;
+
+      if (ratioDispo < 60) {
+        statusBg = 'bg-red-50 border-2 border-red-500 shadow-inner print-break-inside-avoid';
+        statusBadge = `<div class="mt-1.5 bg-red-600 text-white font-black py-1 px-2 rounded-lg text-center text-[10px] uppercase shadow-sm">🟥 Créneau tendu (${ratioDispo}% dispo)</div>`;
+      } else if (ratioDispo < 75 || countOrange >= Math.ceil(totalProfs * 0.25)) {
+        statusBg = 'bg-amber-50/90 border-2 border-amber-400';
+        statusBadge = `<div class="mt-1.5 bg-amber-500 text-blue-950 font-black py-1 px-2 rounded-lg text-center text-[10px] uppercase shadow-2xs">🟧 Moins tendu (${ratioDispo}% dispo)</div>`;
+      }
+
+      trHtml += `
+        <td class="p-2.5 border-r border-blue-100 align-top transition print-break-inside-avoid ${statusBg}">
+          <div class="text-[10px] space-y-1">
+            <div class="flex justify-between text-blue-950"><span class="font-bold">Dispo SA / SB :</span> <span class="font-mono-num font-extrabold">${dispoSA} / ${dispoSB}</span></div>
+            <div class="flex justify-between text-slate-700"><span class="font-semibold">Indispo SA / SB :</span> <span class="font-mono-num font-bold">${indispoSA} / ${indispoSB}</span></div>
+            <hr class="border-slate-300/70 my-1">
+            <div class="grid grid-cols-2 gap-1 text-[9px]">
+              <div class="bg-white/80 px-1.5 py-0.5 rounded border border-red-200 text-red-800 font-bold">🟥 Tot: ${countRed}</div>
+              <div class="bg-white/80 px-1.5 py-0.5 rounded border border-amber-200 text-amber-800 font-bold">🟧 Évit: ${countOrange}</div>
+              <div class="bg-white/80 px-1.5 py-0.5 rounded border border-purple-200 text-purple-800 font-bold">🟪 SA: ${countSA}</div>
+              <div class="bg-white/80 px-1.5 py-0.5 rounded border border-sky-200 text-sky-800 font-bold">🟦 SB: ${countSB}</div>
+            </div>
+            ${statusBadge}
+          </div>
+        </td>
+      `;
+    });
+    tbody.innerHTML += `<tr>${trHtml}</tr>`;
+  });
+}
+
+/**
+ * STEP 2 : ORGANISATION DES EXAMENS (SURVEILLANCES AVEC GROUPES & CALENDRIER)
+ */
+function getSelectedLevels() {
+  const cb = document.querySelectorAll('.exam-level-cb:checked');
+  return Array.from(cb).map(el => el.value);
+}
+
+/**
+ * Détecte les lignes techniques "PAS DE COURS" / "HORAIR" à ignorer totalement
+ */
+function isNoCourseEntry(course) {
+  if (!course) return true;
+  const mat = (course['MAT_CODE'] || '').toUpperCase().trim();
+  const lib = (course['MAT_LIBELLE'] || '').toUpperCase().trim();
+  const cl = (course['CLASSE'] || '').toUpperCase().trim();
+  if (!course.profs || course.profs.length === 0) return true;
+  if (mat === 'PAS DE' || mat === 'HORAIR' || mat.includes('PAS DE COURS') || lib.includes('PAS DE COURS') || cl.includes('PAS DE COURS')) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Détecte si un cours concerne un dispositif ULIS ou UPE2A (qui ne doit jamais être libéré par un examen de niveau)
+ */
+function isUlisOrUpe2aCourse(course) {
+  if (!course) return false;
+  const combined = `${course['MAT_CODE'] || ''} ${course['MAT_LIBELLE'] || ''} ${course['CLASSE'] || ''}`.toUpperCase();
+  return combined.includes('ULIS') || combined.includes('UPE2A');
+}
+
+/**
+ * Détermine si un cours (classe entière ou groupe de divisions) est intégralement libéré par l'examen :
+ * - Les cours ULIS et UPE2A ne sont jamais libérés.
+ * - Tout groupe de niveau ou de division (ex: [303G1], [303G2], [3EME ESP]) est libéré dès que son niveau est convoqué.
+ * - Si c'est un groupe impliquant plusieurs niveaux (ex: [4EME/3EME]),
+ *   le professeur n'est libéré que si TOUTES les divisions rattachées au groupe sont convoquées en examen.
+ */
+function evaluateCourseExamRelease(course, niveauxConvoques) {
+  // Toujours recalculer / vérifier les divisions parentes pour prendre en compte les groupes comme [303G1], [303G2]
+  const parents = inferParentClasses(course ? course['CLASSE'] : '');
+
+  if (isUlisOrUpe2aCourse(course)) {
+    return { released: false, partialGroup: false, specialMaintained: true, parents };
+  }
+
+  if (!niveauxConvoques || !niveauxConvoques.length) {
+    return { released: false, partialGroup: false, specialMaintained: false, parents };
+  }
+
+  const matchingParents = parents.filter(cl => {
+    const cleanCl = String(cl).replace(/^\[+/, '').trim();
+    return cleanCl && niveauxConvoques.some(niv => cleanCl.startsWith(niv));
+  });
+  if (matchingParents.length === parents.length && parents.length > 0) {
+    return { released: true, partialGroup: false, specialMaintained: false, parents };
+  }
+  if (matchingParents.length > 0 && matchingParents.length < parents.length) {
+    return { released: false, partialGroup: true, specialMaintained: false, parents };
+  }
+  return { released: false, partialGroup: false, specialMaintained: false, parents };
+}
+
+function computeExamSupervisors() {
+  if (!hasLoadedFile) {
+      showToast("⚠️ Importez le fichier EXP_COURS.csv pour calculer les disponibilités d'examen.");
+      return;
+  }
+
+  // Vérification de cohérence entre le jour coché et la date du calendrier
+  const day = document.getElementById('examDay').value;
+  if (selectedCalendarEntry && selectedCalendarEntry.dateStr) {
+    const dayOffsetMap = { lundi: 0, mardi: 1, mercredi: 2, jeudi: 3, vendredi: 4 };
+    if (selectedCalendarEntry.mappedDay && selectedCalendarEntry.mappedDay !== day && dayOffsetMap[day] !== undefined) {
+      const mondayObj = getMondayOfDate(isoToLocalDate(selectedCalendarEntry.dateStr));
+      const correctedISO = localDateToISO(addDays(mondayObj, dayOffsetMap[day]));
+      const dateInput = document.getElementById('examCalendarDate');
+      if (dateInput) dateInput.value = correctedISO;
+      evaluateCalendarDate(correctedISO);
+      return;
+    }
+  }
+
+  // Vérification si le calendrier indique un jour férié ou une semaine de vacances
+  if (selectedCalendarEntry && (selectedCalendarEntry.isFerie || selectedCalendarEntry.weekTypeChar === '0')) {
+    const tbody = document.getElementById('examTableBody');
+    const reason = selectedCalendarEntry.isFerie ? 'Jour férié / Congé sur le calendrier EDT' : 'Semaine de vacances (code 0 sur EXP_CALENDRIER.csv)';
+    const dateFormatted = formatDateFR(selectedCalendarEntry.dateStr);
+    const periodLabel = document.getElementById('examPeriod').value === 'AM' ? 'Matin' : 'Après-midi';
+    document.getElementById('examResultTitle').textContent = `Surveillants potentiels : ${day.charAt(0).toUpperCase() + day.slice(1)} ${periodLabel} • Date : ${dateFormatted}`;
+    tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-red-600 font-extrabold bg-red-50">🚫 Aucun cours programmé le ${dateFormatted} : ${reason}.</td></tr>`;
+    return;
+  }
+
+  const period = document.getElementById('examPeriod').value;
+  const weekCode = document.getElementById('examWeek').value;
+  const niveaux = getSelectedLevels();
+  
+  const slots = period === 'AM' ? [0, 1, 2, 3, 4] : [6, 7, 8];
+  
+  // 1. Identifier uniquement les professeurs réellement présents pour d'AUTRES classes que les niveaux en examen sur cette demi-journée
+  // Un professeur qui n'a que des classes du niveau en examen (ex: uniquement des 3èmes) est libéré sur ses heures de 3ème et ne doit pas apparaître "en trou" sur les autres heures.
+  const profsMaintenusDemiJournee = new Set();
+  const profHalfDayMaintainedCourses = {};
+  courses.forEach(c => {
+    if (isNoCourseEntry(c)) return;
+    if (c['JOUR'] === day && (weekCode === 'H' || weeksConflict(c.effAlt, weekCode))) {
+      const intersect = slots.some(s => s >= c.slotIdx && s < c.slotIdx + c.span);
+      if (intersect) {
+        const evalRes = evaluateCourseExamRelease(c, niveaux);
+        // Seuls les cours NON libérés (autres niveaux que le niveau coché, groupes mixtes, ULIS/UPE2A) justifient la présence "en trou" sur la 1/2 journée
+        if (!evalRes.released) {
+          c.profs.forEach(p => {
+            profsMaintenusDemiJournee.add(p);
+            if (!profHalfDayMaintainedCourses[p]) profHalfDayMaintainedCourses[p] = [];
+            const grpTag = c.isGroup ? ' [Grp]' : '';
+            const label = `${MAIN_SLOTS[c.slotIdx]?.code || ''} ${c['CLASSE']}${grpTag}`;
+            if (!profHalfDayMaintainedCourses[p].includes(label)) {
+              profHalfDayMaintainedCourses[p].push(label);
+            }
+          });
+        }
+      }
+    }
+  });
+
+  // Table Setup : Horaires en vertical (lignes) et Catégories en colonnes
+  const thead = document.getElementById('examTableHead');
+  const tbody = document.getElementById('examTableBody');
+  
+  thead.innerHTML = `
+    <th class="p-3 w-36 border-r border-blue-200 bg-blue-950 text-amber-300">Créneau Horaire</th>
+    <th class="p-3 w-1/3 border-r border-blue-200 bg-emerald-50 text-emerald-950">
+      ✨ Libérés par l'examen
+      <div class="text-[10px] font-normal text-slate-600 normal-case">Classe entière ou groupe intégralement en examen (hors ULIS / UPE2A).</div>
+    </th>
+    <th class="p-3 w-1/3 border-r border-blue-200 bg-amber-50 text-amber-950">
+      ⏳ En trou sur la 1/2 journée
+      <div class="text-[10px] font-normal text-slate-600 normal-case">Présents pour d'autres niveaux sur la 1/2 journée mais sans cours à cette heure.</div>
+    </th>
+    <th class="p-3 w-1/4 border-r border-blue-200 bg-slate-100 text-slate-800">
+      📚 Maintenus en cours / ULIS / UPE2A
+      <div class="text-[10px] font-normal text-slate-500 normal-case">Autres niveaux, groupes mixtes, ULIS ou UPE2A.</div>
+    </th>
+    <th class="p-3 w-32 text-center bg-blue-800 text-white">Total Dispo</th>
+  `;
+
+  let rowsHtml = '';
+
+  slots.forEach(sIdx => {
+    const profsOccupesMap = new Map();
+    const profsExamenMap = new Map();
+
+    courses.forEach(c => {
+      if (isNoCourseEntry(c)) return;
+      if (c['JOUR'] === day && sIdx >= c.slotIdx && sIdx < c.slotIdx + c.span && (weekCode === 'H' || weeksConflict(c.effAlt, weekCode))) {
+        const evalRes = evaluateCourseExamRelease(c, niveaux);
+        const safeParents = Array.isArray(evalRes.parents) ? evalRes.parents : [];
+        const grpBadge = c.isGroup && safeParents.length ? ` • Grp [${safeParents.join(', ')}]` : '';
+        const altBadge = c.effAlt !== 'H' ? ` (${c.effAlt})` : '';
+        const courseDetail = `${c['MAT_CODE'] || ''} — ${c['CLASSE'] || ''}${grpBadge}${altBadge}`;
+        
+        if (evalRes.released) {
+          (c.profs || []).forEach(p => {
+            const prev = profsExamenMap.get(p);
+            profsExamenMap.set(p, prev ? `${prev} + ${courseDetail}` : courseDetail);
+          });
+        } else {
+          let mainNote = '';
+          if (evalRes.specialMaintained) mainNote = ' 🔒 ULIS/UPE2A maintenu';
+          else if (evalRes.partialGroup) mainNote = ' ⚠️ Grp multi-niveaux maintenu';
+          (c.profs || []).forEach(p => {
+            const prev = profsOccupesMap.get(p);
+            profsOccupesMap.set(p, prev ? `${prev} + ${courseDetail}${mainNote}` : `${courseDetail}${mainNote}`);
+          });
+        }
+      }
+    });
+
+    // "Libérés": Profs dont la classe ou le groupe de divisions est intégralement en examen à cette heure, et sans autre cours maintenu en parallèle
+    const vraisLiberes = [...profsExamenMap.keys()].filter(p => !profsOccupesMap.has(p)).sort();
+    
+    // "En trou": Uniquement les profs qui ont d'autres classes (hors niveaux cochés) sur la demi-journée, et qui sont libres à cette heure
+    const vraisTrou = [...profsMaintenusDemiJournee].filter(p => !profsOccupesMap.has(p) && !vraisLiberes.includes(p)).sort();
+
+    const total = vraisLiberes.length + vraisTrou.length;
+
+    rowsHtml += `
+      <tr class="print-break-inside-avoid">
+        <!-- Colonne Horaire -->
+        <td class="p-3 font-black text-blue-950 bg-blue-50/70 border-r border-blue-200 align-middle whitespace-nowrap">
+          <div class="text-xs">${MAIN_SLOTS[sIdx].label}</div>
+        </td>
+
+        <!-- Colonne Libérés -->
+        <td class="p-3 border-r border-blue-200 align-top bg-emerald-50/20">
+          <div class="font-black text-emerald-800 mb-1.5 border-b border-emerald-200 pb-1">${vraisLiberes.length} prof(s) libéré(s)</div>
+          <div class="grid sm:grid-cols-2 gap-1.5 text-[10px] text-slate-800 font-semibold leading-tight">
+            ${vraisLiberes.map(p => `
+              <div class="bg-white p-1.5 rounded-lg border border-emerald-200 shadow-2xs">
+                <div class="font-extrabold text-blue-950">${p}</div>
+                <div class="text-[9px] text-emerald-700 font-bold">Libéré : ${profsExamenMap.get(p)}</div>
+              </div>
+            `).join('') || '<span class="text-slate-400 italic font-normal">Aucun</span>'}
+          </div>
+        </td>
+
+        <!-- Colonne En Trou -->
+        <td class="p-3 border-r border-blue-200 align-top bg-amber-50/20">
+          <div class="font-black text-amber-700 mb-1.5 border-b border-amber-200 pb-1">${vraisTrou.length} prof(s) en trou</div>
+          <div class="grid sm:grid-cols-2 gap-1.5 text-[10px] text-slate-800 font-semibold leading-tight">
+            ${vraisTrou.map(p => `
+              <div class="bg-white p-1.5 rounded-lg border border-amber-200 shadow-2xs">
+                <div class="font-extrabold text-blue-950">${p}</div>
+                <div class="text-[9px] text-amber-700">1/2j : ${(profHalfDayMaintainedCourses[p] || []).join(', ')}</div>
+              </div>
+            `).join('') || '<span class="text-slate-400 italic font-normal">Aucun</span>'}
+          </div>
+        </td>
+
+        <!-- Colonne Maintenus -->
+        <td class="p-3 border-r border-blue-200 align-top bg-slate-50/60">
+          <div class="font-bold text-slate-600 mb-1 text-[10px]">${profsOccupesMap.size} prof(s) maintenu(s)</div>
+          <details class="text-[9px] text-slate-500 cursor-pointer">
+            <summary class="font-semibold hover:text-blue-700">Voir détails classes & groupes</summary>
+            <div class="mt-1.5 space-y-1 pl-1 border-l-2 border-slate-300">
+              ${[...profsOccupesMap.entries()].sort((a,b) => a[0].localeCompare(b[0])).map(([p, d]) => `<div><strong class="text-slate-700">${p}</strong> : ${d}</div>`).join('') || 'Aucun'}
+            </div>
+          </details>
+        </td>
+
+        <!-- Colonne Total -->
+        <td class="p-3 text-center bg-blue-50/50 align-middle">
+          <span class="text-xl font-black text-blue-900">${total}</span>
+          <div class="text-[9px] font-bold text-slate-500">${vraisLiberes.length} lib. + ${vraisTrou.length} trou</div>
+        </td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = rowsHtml;
+  
+  const nivLabels = niveaux.length ? niveaux.map(n => n + 'ème').join(', ') : 'Aucun niveau ciblé';
+  const periodLabel = period === 'AM' ? 'Matin' : 'Après-midi';
+  const calLabel = selectedCalendarEntry ? ` • Date : ${formatDateFR(selectedCalendarEntry.dateStr)}` : '';
+  
+  document.getElementById('examResultTitle').textContent = `Surveillants potentiels : ${day.charAt(0).toUpperCase() + day.slice(1)} ${periodLabel}${calLabel}`;
+  document.getElementById('examResultSub').textContent = `Divisions & Groupes libérés : ${nivLabels} • Semaine retenue : ${weekCode === 'Q1' ? 'Semaine A (H+Q1)' : weekCode === 'Q2' ? 'Semaine B (H+Q2)' : 'Commune (H)'}`;
+}
+
+/**
+ * IMPRESSION A4 PAYSAGE ADAPTÉE AU CONTENU (FICHES PROFS, BILAN N+1, EXAMENS)
+ */
+function buildProfVoeuxSheetHtml(profName, index, total) {
+  const cellBgPrintMap = {
+    GREEN:  'bg-emerald-50/50',
+    ORANGE: 'bg-amber-50',
+    SA:     'bg-purple-50/60',
+    SB:     'bg-sky-50/60',
+    RED:    'bg-red-50'
+  };
+
+  let countRed = 0, countSA = 0, countSB = 0, countOrange = 0, countGreen = 0;
+  let rowsHtml = '';
+
+  MAIN_SLOTS.forEach((slot, sIdx) => {
+    let cellsHtml = `<td class="p-2 font-extrabold text-blue-950 bg-blue-50/70 border border-slate-300">${slot.label}</td>`;
+    DAYS.forEach(day => {
+      const col = getConstraint(profName, day, sIdx);
+      if (col === 'RED') countRed++;
+      else if (col === 'SA') countSA++;
+      else if (col === 'SB') countSB++;
+      else if (col === 'ORANGE') countOrange++;
+      else countGreen++;
+
+      const bgClass = cellBgPrintMap[col] || cellBgPrintMap.GREEN;
+      cellsHtml += `
+        <td class="p-1.5 border border-slate-300 text-center align-middle ${bgClass}">
+          ${renderConstraintCellHtml(col, true)}
+        </td>
+      `;
+    });
+    rowsHtml += `<tr class="print-break-inside-avoid">${cellsHtml}</tr>`;
+  });
+
+  const dateEdit = new Date().toLocaleDateString('fr-FR');
+
+  return `
+    <div class="print-page-sheet bg-white p-2">
+      <div class="flex items-center justify-between border-b-2 border-blue-900 pb-2 mb-3">
+        <div>
+          <div class="text-[10px] font-black uppercase tracking-widest text-blue-800">PERDIRFORMANCE ⏱️ GEST-EduTemps & PRÉPA N+1</div>
+          <h2 class="text-base font-black text-blue-950 mt-0.5">Fiche individuelle des vœux et disponibilités — <span class="text-blue-700 underline">${profName}</span></h2>
+        </div>
+        <div class="text-right text-[10px] font-bold text-slate-600">
+          <div>Édité le ${dateEdit}</div>
+          <div>Fiche ${index + 1} / ${total}</div>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3 bg-slate-50 p-2 rounded-xl border border-slate-200 text-[10px] font-bold">
+        <div class="flex flex-wrap gap-3">
+          <span class="text-emerald-800">🟩 Créneaux disponibles : <strong>${countGreen}</strong></span>
+          <span class="text-amber-800">🟧 À éviter : <strong>${countOrange}</strong></span>
+          <span class="text-purple-800">🟪 Indispo Semaine A (Gauche) : <strong>${countSA}</strong></span>
+          <span class="text-sky-800">🟦 Indispo Semaine B (Droite) : <strong>${countSB}</strong></span>
+          <span class="text-red-800">🟥 Indispo Totale (SA+SB) : <strong>${countRed}</strong></span>
+        </div>
+        <div class="text-slate-500 italic">Total : 45 créneaux hebdomadaires</div>
+      </div>
+
+      <table class="w-full text-left border-collapse border border-slate-300 print-fit-table text-xs">
+        <thead>
+          <tr class="bg-blue-900 text-white uppercase text-[10px]">
+            <th class="p-2 w-32 border border-slate-300">Créneau</th>
+            <th class="p-2 w-1/5 border border-slate-300 text-center">Lundi</th>
+            <th class="p-2 w-1/5 border border-slate-300 text-center">Mardi</th>
+            <th class="p-2 w-1/5 border border-slate-300 text-center">Mercredi</th>
+            <th class="p-2 w-1/5 border border-slate-300 text-center">Jeudi</th>
+            <th class="p-2 w-1/5 border border-slate-300 text-center">Vendredi</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function triggerPrintForProfs(profsList) {
+  if (!profsList || !profsList.length) {
+    return showToast('⚠️ Aucun professeur sélectionné pour l\'impression.');
+  }
+  const container = document.getElementById('voeuxPrintContainer');
+  const s1Panel = document.getElementById('step-panel-1');
+  const s2Panel = document.getElementById('step-panel-2');
+
+  container.innerHTML = profsList.map((p, idx) => buildProfVoeuxSheetHtml(p, idx, profsList.length)).join('');
+  container.classList.remove('hidden');
+  s1Panel.classList.add('no-print');
+  s2Panel.classList.add('no-print');
+
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => {
+      container.classList.add('hidden');
+      container.innerHTML = '';
+      s1Panel.classList.remove('no-print');
+      s2Panel.classList.remove('no-print');
+    }, 300);
+  }, 100);
+}
+
+function printActiveProfVoeux() {
+  if (!selectedProf) return showToast('⚠️ Sélectionnez un professeur dans la liste.');
+  triggerPrintForProfs([selectedProf]);
+}
+
+function printSelectedProfsVoeux() {
+  const targets = checkedProfs.size > 0 ? allProfs.filter(p => checkedProfs.has(p)) : (selectedProf ? [selectedProf] : []);
+  if (!targets.length) return showToast('⚠️ Cochez au moins un professeur à imprimer.');
+  triggerPrintForProfs(targets);
+}
+
+function printBilanTable() {
+  renderBilanGrid();
+  window.print();
+}
+
+function printExamTable() {
+  window.print();
+}
+
+// Initial state checks : restaure automatiquement les données sauvegardées sans réinitialiser à chaque ouverture
+window.addEventListener('DOMContentLoaded', () => {
+    try {
+      const raw = localStorage.getItem(AUTOSAVE_KEY);
+      if (raw) {
+        const savedData = JSON.parse(raw);
+        if (savedData && ((savedData.allProfs && savedData.allProfs.length > 0) || (savedData.courses && savedData.courses.length > 0) || savedData.calendarData)) {
+          restoreStateObject(savedData);
+        } else {
+          clearToBlankState(false);
+        }
+      } else {
+        clearToBlankState(false);
+      }
+    } catch (e) {
+      clearToBlankState(false);
+    }
+
+    // Support du Glisser-Déposer (Drag & Drop) sur toute la page et dans la modale
+    window.addEventListener('dragover', e => e.preventDefault());
+    window.addEventListener('drop', e => {
+      e.preventDefault();
+      const file = e.dataTransfer?.files?.[0];
+      if (!file) return;
+      readFileRobust(file, text => {
+        closeCalendarModal();
+        if (isCalendarCsvContent(text, file.name)) {
+          loadCalendarCSV(text, file.name);
+          goToStep(2);
+        } else {
+          loadCSV(text, file.name);
+        }
+      });
+    });
+});
+
+</script>
+</body>
+</html>
