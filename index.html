@@ -32,40 +32,56 @@
     .print-only { display: none; }
     @page {
       size: A4 landscape;
-      margin: 8mm;
+      margin: 6mm;
     }
     @media print {
       html, body {
         background: white !important;
         width: 100% !important;
+        height: auto !important;
         margin: 0 !important;
         padding: 0 !important;
+        overflow: visible !important;
+        display: block !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
       .no-print { display: none !important; }
       .print-only { display: block !important; }
       main {
+        display: block !important;
         max-width: 100% !important;
         width: 100% !important;
         padding: 0 !important;
         margin: 0 !important;
+        overflow: visible !important;
       }
       .print-break-inside-avoid {
         break-inside: avoid;
         page-break-inside: avoid;
       }
       .print-page-sheet {
-        page-break-after: always;
-        break-after: page;
-        page-break-inside: avoid;
-        break-inside: avoid;
-        width: 100%;
-        box-sizing: border-box;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        height: 194mm !important;
+        max-height: 194mm !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+        padding: 2mm 0 !important;
       }
       .print-page-sheet:last-child {
-        page-break-after: auto;
-        break-after: auto;
+        page-break-after: auto !important;
+        break-after: auto !important;
+      }
+      #voeuxPrintContainer.is-printing {
+        display: block !important;
+        width: 100% !important;
       }
       .print-fit-table {
         width: 100% !important;
@@ -78,6 +94,76 @@
         padding: 4px 6px !important;
         word-wrap: break-word !important;
         overflow-wrap: break-word !important;
+      }
+      .print-prof-table {
+        flex: 1 1 auto !important;
+        height: 100% !important;
+      }
+      .print-prof-table th {
+        padding: 5px 6px !important;
+        font-size: 10px !important;
+      }
+      .print-prof-table td {
+        padding: 4px 6px !important;
+        font-size: 10px !important;
+        vertical-align: middle !important;
+      }
+      .print-bilan-sheet {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        height: 194mm !important;
+        max-height: 194mm !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        border: none !important;
+        border-radius: 0 !important;
+      }
+      .print-bilan-table {
+        flex: 1 1 auto !important;
+        height: 100% !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        table-layout: fixed !important;
+      }
+      .print-bilan-table th {
+        padding: 3px 5px !important;
+        font-size: 9px !important;
+      }
+      .print-bilan-table td {
+        padding: 2px 4px !important;
+        font-size: 8px !important;
+        line-height: 1.1 !important;
+        vertical-align: middle !important;
+      }
+      .print-bilan-table .bilan-row-stat {
+        font-size: 8px !important;
+        line-height: 1.1 !important;
+      }
+      .print-bilan-table .bilan-sub-stat {
+        font-size: 7.2px !important;
+        line-height: 1.05 !important;
+        margin-bottom: 1px !important;
+      }
+      .print-bilan-table .bilan-chips {
+        gap: 2px !important;
+        font-size: 7px !important;
+      }
+      .print-bilan-table .bilan-chips > span {
+        padding: 0.5px 3px !important;
+      }
+      .print-bilan-table .bilan-status-badge {
+        margin-top: 2px !important;
+        padding: 1px 3px !important;
+        font-size: 7.5px !important;
+        line-height: 1.05 !important;
+      }
+      .print-bilan-table .bilan-lunch-cell {
+        padding: 2px 4px !important;
+        font-size: 8px !important;
       }
       .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl { box-shadow: none !important; }
       .border { border-color: #cbd5e1 !important; }
@@ -109,13 +195,100 @@
 
       <div class="space-y-1.5 pt-2 border-t border-slate-200">
         <label class="block text-[11px] font-extrabold text-slate-700">📋 Ou collez directement le contenu du fichier CSV ci-dessous :</label>
-        <textarea id="pasteCalendarArea" rows="3" placeholder='Septembre;Octobre;Novembre;Décembre;Janvier;Février;Mars;Avril;Mai;Juin;Juillet' class="w-full border border-blue-200 rounded-xl p-2.5 text-xs font-mono bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+        <textarea id="pasteCalendarArea" rows="3" placeholder='Septembre;Octobre;Novembre;Décembre;Janvier;Février;Mars;Avril;Mai;Juillet' class="w-full border border-blue-200 rounded-xl p-2.5 text-xs font-mono bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
         <div class="flex justify-end gap-2 pt-1">
           <button type="button" onclick="closeCalendarModal()" class="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">Fermer</button>
           <button type="button" onclick="importPastedCalendar()" class="bg-blue-700 hover:bg-blue-600 text-white font-extrabold px-4 py-1.5 rounded-xl text-xs shadow-sm transition">
             ✅ Valider le texte collé
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE NOTICE D'UTILISATION -->
+  <div id="noticeModal" class="hidden fixed inset-0 z-50 bg-blue-950/70 backdrop-blur-xs flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-3xl max-w-4xl w-full max-h-[88vh] flex flex-col border-2 border-blue-200 shadow-2xl overflow-hidden">
+      <div class="bg-gradient-to-r from-blue-950 via-blue-900 to-blue-800 text-white px-6 py-4 flex items-center justify-between border-b-4 border-amber-400 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <span class="text-2xl">📘</span>
+          <div>
+            <h3 class="font-black text-base text-amber-300">Notice d'utilisation — PERDIRFORMANCE ⏱️ GEST-EduTemps</h3>
+            <p class="text-[11px] text-blue-100">Guide pas-à-pas : Exports EDT, Prépa N+1 & Surveillances d'examens</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeNoticeModal()" class="bg-white/10 hover:bg-white/20 text-white font-bold text-sm px-3 py-1.5 rounded-xl transition">✕ Fermer</button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-5 text-xs text-slate-700 leading-relaxed select-text">
+        <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 space-y-1.5">
+          <p class="font-bold text-blue-950 text-sm">Présentation générale</p>
+          <p><strong>GEST-EduTemps</strong> est une application web destinée aux équipes de direction (Chefs d'établissement et Adjoints) permettant de :</p>
+          <ul class="list-disc pl-5 space-y-1">
+            <li><strong>Préparer les emplois du temps N+1</strong> en recueillant et en équilibrant les vœux des professeurs (<strong>Module 1</strong>, totalement autonome).</li>
+            <li><strong>Organiser rapidement les surveillances d'examens</strong> (DNB, bac blanc, devoirs communs…) en croisant automatiquement les cours et le calendrier d'EDT (<strong>Module 2</strong>).</li>
+          </ul>
+          <p class="text-[11px] text-emerald-800 font-bold pt-1">🔒 Confidentialité & RGPD : Toutes vos données sont traitées exclusivement en local dans votre navigateur. Aucune donnée n'est envoyée sur un serveur externe.</p>
+        </div>
+
+        <div class="space-y-2.5">
+          <h4 class="text-sm font-black text-blue-950 border-b border-blue-200 pb-1">🛠️ Étape préalable : Exporter les fichiers depuis EDT (Index Éducation)</h4>
+          <div class="grid md:grid-cols-2 gap-3">
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-1.5">
+              <div class="font-extrabold text-blue-900">1. Exporter le calendrier annuel (<code>EXP_CALENDRIER.csv</code>)</div>
+              <ol class="list-decimal pl-4 space-y-1">
+                <li>Dans EDT : <strong>Imports/Exports</strong> ➔ <strong>TXT/CSV/XML/SQL</strong> ➔ <strong>Exporter un fichier texte</strong>.</li>
+                <li>Type de données à exporter : <strong>Calendrier</strong>.</li>
+                <li>Cochez <strong>Format CSV (*.csv)</strong> (séparateur <em>Point-virgule</em>).</li>
+                <li>Vérifiez l'aperçu par mois (<em>Septembre;Octobre;Novembre...</em>) puis cliquez sur <strong>Exporter ...</strong>.</li>
+              </ol>
+            </div>
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-1.5">
+              <div class="font-extrabold text-blue-900">2. Exporter les cours annuels (<code>EXP_COURS.csv</code>)</div>
+              <ol class="list-decimal pl-4 space-y-1">
+                <li>Type de données à exporter : <strong>Cours annuels</strong> en <strong>Format CSV (*.csv)</strong>.</li>
+                <li>Dans les Options, cochez <strong>Nom des champs sur la première ligne</strong> et <strong>Avec le nom des groupes de salles</strong>.</li>
+                <li>Choix de la période : <strong>Année complète</strong>.</li>
+                <li>Cliquez sur <strong>Exporter ...</strong>.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <h4 class="text-sm font-black text-blue-950 border-b border-blue-200 pb-1">📥 Importer vos données & Gérer vos sauvegardes</h4>
+          <ul class="list-disc pl-5 space-y-1">
+            <li><strong>📂 Importer EXP_COURS.csv (Cours & Profs) :</strong> Charge simultanément tous les cours annuels et alimente la liste des professeurs dans les deux modules.</li>
+            <li><strong>📅 Importer EXP_CALENDRIER.csv :</strong> Charge l'alternance officielle des semaines <strong>A (Q1)</strong> et <strong>B (Q2)</strong> ainsi que les vacances et jours fériés (glisser-déposer possible sur toute la page).</li>
+            <li><strong>💾 Sauvegarder / 📥 Restaurer :</strong> Enregistre ou recharge une session complète au format <code>GEST-EXAM_JJMMAAAA_HHhMM.json</code> (incluant vœux N+1, cours, calendrier et hachures).</li>
+            <li><strong>🗑️ Réinitialiser :</strong> Vide toutes les données en mémoire (sinon votre travail est conservé automatiquement dans le navigateur).</li>
+          </ul>
+        </div>
+
+        <div class="space-y-2">
+          <h4 class="text-sm font-black text-blue-950 border-b border-blue-200 pb-1">🎯 Module 1 : Prépa N+1 (Vœux & Tableau de Contrôle)</h4>
+          <p>Le <strong>Module 1</strong> est <strong>indépendant</strong> : il fonctionne même sans avoir importé de fichier CSV.</p>
+          <ul class="list-disc pl-5 space-y-1">
+            <li><strong>A. Saisie des Vœux Professeurs :</strong> Ajoutez des enseignants un par un ou via <strong>📋 Liste +</strong>. Utilisez les pinceaux (🟩 <em>Dispo</em>, 🟧 <em>À éviter</em>, 🟪 <em>Indispo SA à gauche</em>, 🟦 <em>Indispo SB à droite</em>, 🟥 <em>Indispo SA+SB</em>) sur les créneaux ou sur les boutons <strong>Matin</strong> / <strong>Après-midi</strong>.</li>
+            <li><strong>Actions groupées & Impression :</strong> Cochez des professeurs (ou cliquez sur <strong>☑️ Tout</strong> / <strong>⬜ Aucun</strong>) pour appliquer une contrainte globale ou imprimer les fiches (<strong>1 fiche par page A4 Paysage</strong>).</li>
+            <li><strong>B. Tableau de Contrôle N+1 :</strong> Évalue l'équilibre des disponibilités en Semaine A (gauche) et Semaine B (droite) : 🟩 <strong>Vert</strong> (≥ 75% dispos), 🟧 <strong>Orange</strong> (60% à 74%), 🟥 <strong>Rouge</strong> (&lt; 60%).</li>
+          </ul>
+        </div>
+
+        <div class="space-y-2">
+          <h4 class="text-sm font-black text-blue-950 border-b border-blue-200 pb-1">📝 Module 2 : Examens & Surveillances</h4>
+          <ul class="list-disc pl-5 space-y-1">
+            <li><strong>Paramétrage :</strong> Choisissez une semaine (Option 1) ou une date exacte (Option 2) pour régler automatiquement le jour et la Semaine A/B, sélectionnez la période (<strong>Matinée</strong> ou <strong>Après-midi</strong>), cochez les niveaux convoqués (<strong>3ème, 4ème, 5ème, 6ème</strong>) et cliquez sur <strong>Calculer</strong>.</li>
+            <li><strong>✨ Libérés par l'examen :</strong> Professeurs dont la classe entière ou le groupe (ex. <code>302</code>, <code>[303G1]</code>, <code>[3° ESP LV1]</code>) est convoqué. Les cours <strong>ULIS</strong>, <strong>UPE2A</strong> et <strong>PAS DE COURS</strong> ne sont jamais libérés.</li>
+            <li><strong>⏳ En trou :</strong> Professeurs présents sur la demi-journée (ou ayant travaillé le matin pour l'après-midi) sans cours à ce créneau précis (trous au début, entre deux cours ou en fin de demi-journée).</li>
+            <li><strong>Hachurage des surveillants mobilisés :</strong> Cliquez sur la carte d'un professeur pour le <strong>hachurer</strong> (badge <strong>AFFECTÉ</strong>) et décompter automatiquement les surveillants restants. Utilisez <strong>🧹 Réinitialiser les hachures</strong> pour tout effacer.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-600 shrink-0">
+        <span>GEST-EduTemps — Yannis CHRISTON | 2026 • 💬 Tchap : <strong>Ychriston</strong></span>
+        <button type="button" onclick="closeNoticeModal()" class="bg-blue-800 hover:bg-blue-700 text-white font-extrabold px-4 py-1.5 rounded-xl transition">Compris</button>
       </div>
     </div>
   </div>
@@ -154,6 +327,9 @@
         <label for="masterJsonInput" class="cursor-pointer bg-blue-800/90 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded-xl border border-blue-600 transition" title="Restaurer un projet (.json)">
           📥 Restaurer
         </label>
+        <button type="button" onclick="openNoticeModal()" class="bg-blue-800/90 hover:bg-amber-400 text-amber-300 hover:text-blue-950 text-xs font-extrabold px-3 py-2 rounded-xl border border-amber-400/50 transition" title="Ouvrir la notice d'utilisation">
+          📘 Notice
+        </button>
         <button type="button" onclick="clearToBlankState(true)" class="bg-blue-950/60 hover:bg-red-600 text-amber-300 hover:text-white text-xs font-bold p-2 rounded-xl border border-blue-700/60 transition" title="Réinitialiser">
           🗑️
         </button>
@@ -390,15 +566,15 @@
           <button type="button" onclick="printBilanTable()" class="bg-amber-400 text-blue-950 font-bold px-4 py-2 rounded-xl text-xs hover:bg-amber-300 shadow-sm transition">🖨️ Imprimer le Bilan (A4 Paysage)</button>
         </div>
 
-        <div class="bg-white rounded-3xl border border-blue-200 shadow-sm overflow-x-auto print-page-sheet">
-          <div class="print-only mb-2 pb-1.5 border-b-2 border-blue-900 flex items-center justify-between">
+        <div class="bg-white rounded-3xl border border-blue-200 shadow-sm overflow-x-auto print-bilan-sheet">
+          <div class="print-only mb-1.5 pb-1 border-b-2 border-blue-900 flex items-center justify-between shrink-0">
             <div>
-              <div class="text-[10px] font-black uppercase tracking-widest text-blue-800">PERDIRFORMANCE ⏱️ GEST-EduTemps & N+1</div>
-              <h2 class="text-sm font-black text-blue-950">Tableau de Contrôle & Répartition des Créneaux (Préparation N+1)</h2>
+              <div class="text-[9px] font-black uppercase tracking-widest text-blue-800">PERDIRFORMANCE ⏱️ GEST-EduTemps & N+1</div>
+              <h2 class="text-xs font-black text-blue-950">Tableau de Contrôle & Répartition des Créneaux (Préparation N+1)</h2>
             </div>
-            <div class="text-[10px] font-bold text-slate-600" id="bilanPrintMeta"></div>
+            <div class="text-[9px] font-bold text-slate-600" id="bilanPrintMeta"></div>
           </div>
-          <table class="w-full text-left border-collapse min-w-[900px] print-fit-table text-xs">
+          <table class="w-full text-left border-collapse min-w-[900px] print-fit-table print-bilan-table text-xs">
             <thead>
               <tr class="bg-blue-900 text-white uppercase border-b-2 border-amber-400">
                 <th class="p-3 w-28 border-r border-white/15">Créneau</th>
@@ -843,16 +1019,25 @@ function clearToBlankState(askConfirm = false) {
 }
 
 /**
- * LECTURE ROBUSTE DES FICHIERS CSV (UTF-8 / WINDOWS-1252)
+ * LECTURE ROBUSTE DES FICHIERS CSV (UTF-8 / WINDOWS-1252 / UTF-16)
  */
 function readFileRobust(file, callback) {
   const reader = new FileReader();
   reader.onload = e => {
     const buffer = e.target.result;
-    let text = new TextDecoder('utf-8').decode(buffer);
-    if (text.includes('\uFFFD')) {
-      text = new TextDecoder('windows-1252').decode(buffer);
+    const bytes = new Uint8Array(buffer);
+    let text = '';
+    if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) {
+      text = new TextDecoder('utf-16le').decode(buffer);
+    } else if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) {
+      text = new TextDecoder('utf-16be').decode(buffer);
+    } else {
+      text = new TextDecoder('utf-8').decode(buffer);
+      if (text.includes('\uFFFD')) {
+        text = new TextDecoder('windows-1252').decode(buffer);
+      }
     }
+    text = text.replace(/^\uFEFF/, '');
     callback(text);
   };
   reader.readAsArrayBuffer(file);
@@ -934,408 +1119,541 @@ function closeCalendarModal() {
   document.getElementById('calendarImportModal')?.classList.add('hidden');
 }
 
+function openNoticeModal() {
+  document.getElementById('noticeModal')?.classList.remove('hidden');
+}
+
+function closeNoticeModal() {
+  document.getElementById('noticeModal')?.classList.add('hidden');
+}
+
 function importPastedCalendar() {
-  const text = document.getElementById('pasteCalendarArea')?.value || '';
-  if (!text.trim()) return showToast('⚠️ Veuillez coller le contenu du calendrier CSV.');
+  const area = document.getElementById('pasteCalendarArea');
+  if (!area || !area.value.trim()) {
+    showToast('⚠️ Veuillez coller le contenu CSV du calendrier.');
+    return;
+  }
+  loadCalendarCSV(area.value, 'Calendrier_colle.csv');
   closeCalendarModal();
-  loadCalendarCSV(text, 'Calendrier_colle.csv');
   goToStep(2);
 }
 
 /**
- * PARSING EXP_COURS.CSV (COURS & PROFESSEURS)
+ * PARSING DU CALENDRIER EDT (EXP_CALENDRIER.csv)
  */
-function mapTimeToSlotIndex(timeStr) {
-  if (!timeStr) return -1;
-  const m = timeStr.match(/(\d{1,2})[hH:](\d{2})/);
-  if (!m) return -1;
-  const mins = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
-  if (mins >= 410 && mins < 470) return 0; // 07h00
-  if (mins >= 470 && mins < 530) return 1; // 08h00
-  if (mins >= 530 && mins < 595) return 2; // 09h00
-  if (mins >= 595 && mins < 650) return 3; // 10h05
-  if (mins >= 650 && mins < 730) return 4; // 11h00
-  if (mins >= 730 && mins < 815) return 5; // 12h30
-  if (mins >= 815 && mins < 875) return 6; // 13h45 / 14h00
-  if (mins >= 875 && mins < 935) return 7; // 14h45 / 15h00
-  if (mins >= 935 && mins < 1030) return 8; // 15h50 / 16h00
-  return -1;
-}
-
-function normalizeDayName(rawDay) {
-  const n = normalizeStr(rawDay);
-  if (n.startsWith('lun') || n === '1') return 'lundi';
-  if (n.startsWith('mar') || n === '2') return 'mardi';
-  if (n.startsWith('mer') || n === '3') return 'mercredi';
-  if (n.startsWith('jeu') || n === '4') return 'jeudi';
-  if (n.startsWith('ven') || n === '5') return 'vendredi';
-  return '';
-}
-
-function normalizeFrequency(rawFreq) {
-  const f = (rawFreq || '').toString().trim().toUpperCase();
-  if (!f || f === 'H' || f === 'HEBDO' || f === 'TOUTES') return 'H';
-  if (f.includes('Q1') || f === 'A' || f === 'SA' || f === '1' || f.includes('SEM A')) return 'Q1';
-  if (f.includes('Q2') || f === 'B' || f === 'SB' || f === '2' || f.includes('SEM B')) return 'Q2';
-  return f;
-}
-
-function splitTeacherNames(rawProf) {
-  if (!rawProf) return [];
-  return rawProf
-    .split(/[,/|&]+/)
-    .map(p => p.replace(/^["'\s]+|["'\s]+$/g, '').toUpperCase())
-    .filter(p => p && p !== '-' && p !== 'SANS' && p !== 'AUCUN' && !p.includes('PAS DE COURS'));
-}
-
-function loadCSV(text, fileName = 'EXP_COURS.csv') {
-  const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
-  if (lines.length < 2) {
-    return showToast('⚠️ Fichier CSV vide ou illisible.');
-  }
-
-  const sep = detectSeparator(lines[0]);
-  const headers = parseCsvLine(lines[0], sep).map(h => normalizeStr(h));
-  rawHeaders = headers;
-
-  const findCol = (keywords) => headers.findIndex(h => keywords.some(k => h === k || h.includes(k)));
-
-  const colProf = findCol(['professeur', 'enseignant', 'prof']);
-  const colMat = findCol(['matiere', 'discipline', 'mat_code', 'libelle_matiere']);
-  const colClasse = findCol(['classe', 'division', 'groupe', 'classes', 'groupes']);
-  const colGroupe = findCol(['groupe', 'sous-groupe', 'grp']);
-  const colJour = findCol(['jour', 'day']);
-  const colHeure = findCol(['h.debut', 'debut', 'heure', 'creneau', 'horaire']);
-  const colDuree = findCol(['duree', 'nb_heures']);
-  const colFreq = findCol(['alternance', 'frequence', 'semaine', 'periode', 'quinzaine', 'modalite']);
-
-  const parsedCourses = [];
-  const profSet = new Set(allProfs);
-  const classSet = new Set();
-
-  for (let i = 1; i < lines.length; i++) {
-    const cols = parseCsvLine(lines[i], sep);
-    if (cols.length < 3) continue;
-
-    const rawProf = colProf >= 0 ? cols[colProf] : '';
-    const matiere = colMat >= 0 ? cols[colMat] : '';
-    const classe = colClasse >= 0 ? cols[colClasse] : '';
-    const groupe = (colGroupe >= 0 && colGroupe !== colClasse) ? cols[colGroupe] : '';
-    const jour = normalizeDayName(colJour >= 0 ? cols[colJour] : '');
-    const heureStr = colHeure >= 0 ? cols[colHeure] : '';
-    const dureeStr = colDuree >= 0 ? cols[colDuree] : '1h00';
-    const freq = normalizeFrequency(colFreq >= 0 ? cols[colFreq] : 'H');
-
-    const matNorm = normalizeStr(matiere);
-    const clsNorm = normalizeStr(classe);
-    if (matNorm.includes('pas de cours') || clsNorm.includes('pas de cours') || matNorm === 'horair') {
-      continue;
-    }
-
-    const profs = splitTeacherNames(rawProf);
-    profs.forEach(p => profSet.add(p));
-
-    if (!jour) continue;
-    const startIdx = mapTimeToSlotIndex(heureStr);
-    if (startIdx < 0) continue;
-
-    let nbSlots = 1;
-    const dm = dureeStr.match(/(\d{1,2})[hH:](\d{2})/);
-    if (dm) {
-      const totalMins = parseInt(dm[1], 10) * 60 + parseInt(dm[2], 10);
-      if (totalMins >= 95 && totalMins < 150) nbSlots = 2;
-      else if (totalMins >= 150 && totalMins < 210) nbSlots = 3;
-      else if (totalMins >= 210) nbSlots = 4;
-    }
-
-    const cleanClass = (classe || groupe || '').trim();
-    if (cleanClass) classSet.add(cleanClass);
-
-    for (let offset = 0; offset < nbSlots; offset++) {
-      const sIdx = startIdx + offset;
-      if (sIdx > 8) break;
-      parsedCourses.push({
-        profs,
-        matiere: (matiere || '').trim(),
-        classe: cleanClass,
-        groupe: (groupe || '').trim(),
-        day: jour,
-        slotIdx: sIdx,
-        freq
-      });
-    }
-  }
-
-  if (parsedCourses.length === 0) {
-    return showToast(`⚠️ Aucun cours exploitable détecté dans "${fileName}".`);
-  }
-
-  courses = parsedCourses;
-  allProfs = [...profSet].sort((a, b) => a.localeCompare(b));
-  allClasses = [...classSet].sort((a, b) => a.localeCompare(b));
-  allProfs.forEach(p => checkedProfs.add(p));
-  if (!selectedProf || !allProfs.includes(selectedProf)) {
-    selectedProf = allProfs[0] || '';
-  }
-  hasLoadedFile = true;
-  currentDatasetName = fileName;
-
-  updateDatasetBadge();
-  triggerAutosave();
-  goToStep(2);
-  showToast(`✅ ${courses.length} créneaux de cours et ${allProfs.length} profs importés !`);
-}
-
-/**
- * PARSING EXP_CALENDRIER.CSV (GRILLE MENSUELLE EDT)
- */
-const MONTH_MAP = {
-  janvier: 1, fevrier: 2, mars: 3, avril: 4, mai: 5, juin: 6,
-  juillet: 7, aout: 8, septembre: 9, octobre: 10, novembre: 11, decembre: 12
-};
-
 function loadCalendarCSV(text, fileName = 'EXP_CALENDRIER.csv') {
   const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
   if (lines.length < 2) {
-    return showToast(`⚠️ Fichier "${fileName}" vide.`);
+    showToast('⚠️ Le fichier calendrier semble vide.');
+    return;
   }
-
   const sep = detectSeparator(lines[0]);
-  const headerCols = parseCsvLine(lines[0], sep);
-  const normHeaders = headerCols.map(h => normalizeStr(h));
+  const headers = parseCsvLine(lines[0], sep);
+  const monthNamesMap = {
+    janvier: 1, fevrier: 2, mars: 3, avril: 4, mai: 5, juin: 6,
+    juillet: 7, aout: 8, septembre: 9, octobre: 10, novembre: 11, decembre: 12
+  };
 
-  // Format grille mensuelle par colonnes : Septembre;Octobre;Novembre...
   const monthCols = [];
-  normHeaders.forEach((h, idx) => {
-    if (MONTH_MAP[h]) {
-      monthCols.push({ colIdx: idx, month: MONTH_MAP[h], name: headerCols[idx] });
+  headers.forEach((h, idx) => {
+    const clean = normalizeStr(h).replace(/[^a-z]/g, '');
+    if (monthNamesMap[clean]) {
+      monthCols.push({ idx, month: monthNamesMap[clean], label: h.trim() });
     }
   });
 
-  if (monthCols.length >= 6) {
-    const now = new Date();
-    const startYear = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
-    const daysByDate = {};
-    const weeksList = [];
-    const seenMondays = new Set();
-
-    for (let r = 1; r < lines.length; r++) {
-      const cells = parseCsvLine(lines[r], sep);
-      monthCols.forEach(mc => {
-        const rawCell = (cells[mc.colIdx] || '').trim();
-        if (!rawCell) return;
-
-        // Extraire le numéro du jour (ex: "1", "01", "L 1", "1 Q1", etc.)
-        const dayMatch = rawCell.match(/\b([0-3]?\d)\b/);
-        const dayNum = dayMatch ? parseInt(dayMatch[1], 10) : r;
-        if (dayNum < 1 || dayNum > 31) return;
-
-        const year = mc.month >= 9 ? startYear : startYear + 1;
-        const dObj = new Date(year, mc.month - 1, dayNum);
-        if (dObj.getMonth() !== mc.month - 1) return;
-
-        const iso = `${year}-${String(mc.month).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
-        const upper = rawCell.toUpperCase();
-        const isHoliday = upper.includes('VAC') || upper.includes('FERIE') || upper.includes('FÉRIÉ') || upper.includes('CONGE');
-        let weekType = null;
-        if (upper.includes('Q1') || /\bA\b/.test(upper) || upper.includes('SEM A')) weekType = 'Q1';
-        else if (upper.includes('Q2') || /\bB\b/.test(upper) || upper.includes('SEM B')) weekType = 'Q2';
-
-        daysByDate[iso] = {
-          dateStr: iso,
-          raw: rawCell,
-          weekType,
-          isHoliday
-        };
-      });
-    }
-
-    // Construire la liste des semaines scolaires (du lundi au vendredi)
-    const sortedDates = Object.keys(daysByDate).sort();
-    sortedDates.forEach(iso => {
-      const [y, m, d] = iso.split('-').map(Number);
-      const dt = new Date(y, m - 1, d);
-      const dow = dt.getDay(); // 0=Dim, 1=Lun ... 6=Sam
-      if (dow === 0 || dow === 6) return;
-
-      const diffToMonday = dow - 1;
-      const monday = new Date(y, m - 1, d - diffToMonday);
-      const monIso = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
-
-      if (!seenMondays.has(monIso)) {
-        seenMondays.add(monIso);
-        // Chercher le type de semaine sur les 5 jours ouvrés de cette semaine
-        let detectedType = null;
-        let allHolidays = true;
-        for (let k = 0; k < 5; k++) {
-          const cur = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + k);
-          const cIso = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
-          const info = daysByDate[cIso];
-          if (info) {
-            if (!info.isHoliday) allHolidays = false;
-            if (!detectedType && info.weekType) detectedType = info.weekType;
-          }
-        }
-        // Alternance automatique si non explicitement écrit sur la semaine
-        if (!detectedType && !allHolidays) {
-          const prevWeek = weeksList.filter(w => !w.isHoliday).slice(-1)[0];
-          detectedType = prevWeek && prevWeek.weekType === 'Q1' ? 'Q2' : 'Q1';
-        }
-        const friday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 4);
-        const friIso = `${friday.getFullYear()}-${String(friday.getMonth() + 1).padStart(2, '0')}-${String(friday.getDate()).padStart(2, '0')}`;
-
-        weeksList.push({
-          mondayStr: monIso,
-          fridayStr: friIso,
-          weekType: detectedType || 'H',
-          isHoliday: allHolidays
-        });
-      }
-    });
-
-    calendarData = {
-      source: fileName,
-      daysByDate,
-      weeks: weeksList
-    };
-
-    updateCalendarUI();
-    triggerAutosave();
-    showToast(`📅 Calendrier importé (${weeksList.length} semaines détectées).`);
+  if (monthCols.length < 6) {
+    showToast('⚠️ Format calendrier EDT non reconnu (colonnes de mois manquantes).');
     return;
   }
 
-  const headPreview = lines[0].slice(0, 48);
-  showToast(`⚠️ Fichier "${fileName}" non reconnu comme calendrier (entête lu : "${headPreview}").`);
+  const nowYear = new Date().getFullYear();
+  const startYear = (new Date().getMonth() >= 7) ? nowYear : nowYear - 1;
+  const daysMap = {};
+
+  for (let r = 1; r < lines.length; r++) {
+    const cols = parseCsvLine(lines[r], sep);
+    monthCols.forEach(mc => {
+      const cell = (cols[mc.idx] || '').trim();
+      if (!cell) return;
+      const dayMatch = cell.match(/\b(\d{1,2})\b/);
+      if (!dayMatch) return;
+      const dayNum = parseInt(dayMatch[1], 10);
+      const year = (mc.month >= 8) ? startYear : startYear + 1;
+      const iso = `${year}-${String(mc.month).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+      const upper = cell.toUpperCase();
+      let weekType = null;
+      if (/\(SA\)|\bSA\b|\(Q1\)|\bQ1\b/.test(upper)) weekType = 'Q1';
+      else if (/\(SB\)|\bSB\b|\(Q2\)|\bQ2\b/.test(upper)) weekType = 'Q2';
+      const isHoliday = /FERIE|FÉRIÉ|VACANCES|CONGE|CONGÉ/.test(upper);
+      daysMap[iso] = {
+        iso,
+        raw: cell,
+        weekType,
+        isHoliday
+      };
+    });
+  }
+
+  const sortedDates = Object.keys(daysMap).sort();
+  if (sortedDates.length === 0) {
+    showToast('⚠️ Aucune date exploitée dans le calendrier.');
+    return;
+  }
+
+  const weeksMap = new Map();
+  let schoolWeekCounter = 0;
+
+  sortedDates.forEach(iso => {
+    const d = new Date(`${iso}T12:00:00`);
+    const jsDay = d.getDay();
+    const diffToMon = (jsDay === 0) ? -6 : 1 - jsDay;
+    const mon = new Date(d);
+    mon.setDate(d.getDate() + diffToMon);
+    const monIso = mon.toISOString().slice(0, 10);
+
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+    const sunIso = sun.toISOString().slice(0, 10);
+
+    if (!weeksMap.has(monIso)) {
+      weeksMap.set(monIso, {
+        mondayIso: monIso,
+        sundayIso: sunIso,
+        weekType: null,
+        schoolWeekNum: null,
+        days: []
+      });
+    }
+    const wObj = weeksMap.get(monIso);
+    const info = daysMap[iso];
+    wObj.days.push(info);
+    if (!wObj.weekType && info.weekType) {
+      wObj.weekType = info.weekType;
+    }
+  });
+
+  const weeks = [];
+  [...weeksMap.values()].sort((a, b) => a.mondayIso.localeCompare(b.mondayIso)).forEach(w => {
+    if (w.weekType) {
+      schoolWeekCounter++;
+      w.schoolWeekNum = schoolWeekCounter;
+    }
+    weeks.push(w);
+  });
+
+  const minIso = sortedDates[0];
+  const maxIso = sortedDates[sortedDates.length - 1];
+  const schoolYears = `${minIso.slice(0, 4)}–${maxIso.slice(0, 4)}`;
+
+  calendarData = {
+    fileName,
+    schoolYears,
+    minIso,
+    maxIso,
+    daysMap,
+    weeks
+  };
+
+  triggerAutosave();
+  updateCalendarUI();
+  showToast(`📅 Calendrier chargé (${schoolYears} • ${weeks.length} semaines).`);
 }
 
 function updateCalendarUI() {
   const badge = document.getElementById('calendarStatusBadge');
   const pickerRow = document.getElementById('calendarPickerRow');
-  const weekSel = document.getElementById('examCalendarWeekSelect');
+  const weekSelect = document.getElementById('examCalendarWeekSelect');
+  const dateInput = document.getElementById('examCalendarDate');
 
-  if (!badge || !pickerRow || !weekSel) return;
+  if (!calendarData || !calendarData.weeks || calendarData.weeks.length === 0) {
+    if (badge) {
+      badge.textContent = '📅 Calendrier : Non importé (Mode manuel)';
+      badge.className = 'px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200';
+    }
+    pickerRow?.classList.add('hidden');
+    return;
+  }
 
-  if (calendarData && Array.isArray(calendarData.weeks) && calendarData.weeks.length > 0) {
-    badge.textContent = `📅 Calendrier actif (${calendarData.weeks.length} sem.)`;
+  if (badge) {
+    badge.textContent = `📅 Calendrier actif (${calendarData.schoolYears})`;
     badge.className = 'px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300';
-    pickerRow.classList.remove('hidden');
+  }
+  pickerRow?.classList.remove('hidden');
 
-    const prevVal = weekSel.value;
-    weekSel.innerHTML = '<option value="">— Sélectionner une semaine du calendrier —</option>' +
-      calendarData.weeks.map((w, idx) => {
-        const tag = w.isHoliday ? '🌴 Vacances' : (w.weekType === 'Q1' ? 'Semaine A (Q1)' : w.weekType === 'Q2' ? 'Semaine B (Q2)' : 'Semaine');
-        return `<option value="${idx}">Semaine du ${formatDateFR(w.mondayStr)} au ${formatDateFR(w.fridayStr)} — ${tag}</option>`;
-      }).join('');
-    if (prevVal !== '') weekSel.value = prevVal;
-  } else {
-    badge.textContent = '📅 Calendrier : Non importé (Mode manuel)';
-    badge.className = 'px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200';
-    pickerRow.classList.add('hidden');
+  if (dateInput) {
+    dateInput.min = calendarData.minIso;
+    dateInput.max = calendarData.maxIso;
+  }
+
+  if (weekSelect) {
+    const prevVal = weekSelect.value;
+    weekSelect.innerHTML = '<option value="">— Sélectionner une semaine du calendrier —</option>';
+    calendarData.weeks.forEach(w => {
+      const qLabel = w.weekType === 'Q1'
+        ? '🟩 Semaine A (Q1)'
+        : w.weekType === 'Q2'
+          ? '🟦 Semaine B (Q2)'
+          : '🟨 Vacances / Hors cours';
+      const numTxt = w.schoolWeekNum ? ` • Sem. cours n°${w.schoolWeekNum}` : '';
+      const opt = document.createElement('option');
+      opt.value = w.mondayIso;
+      opt.textContent = `Sem. du ${formatDateFR(w.mondayIso)} au ${formatDateFR(w.sundayIso)} — ${qLabel}${numTxt}`;
+      weekSelect.appendChild(opt);
+    });
+    if (prevVal) weekSelect.value = prevVal;
   }
 }
 
-function syncDateWithSelectedWeekAndDay(mondayStr) {
-  if (!mondayStr) return;
-  const dayName = document.getElementById('examDay')?.value || 'lundi';
-  const offset = DAYS.indexOf(dayName);
-  const [y, m, d] = mondayStr.split('-').map(Number);
-  const target = new Date(y, m - 1, d + (offset >= 0 ? offset : 0));
-  const iso = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}-${String(target.getDate()).padStart(2, '0')}`;
+function applyCalendarIsoDate(iso) {
+  if (!calendarData || !iso) return;
+  const d = new Date(`${iso}T12:00:00`);
+  if (isNaN(d.getTime())) return;
 
+  const jsDay = d.getDay();
+  const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+  const dayName = dayNames[jsDay];
+
+  const diffToMon = (jsDay === 0) ? -6 : 1 - jsDay;
+  const mon = new Date(d);
+  mon.setDate(d.getDate() + diffToMon);
+  const monIso = mon.toISOString().slice(0, 10);
+
+  const weekObj = calendarData.weeks.find(w => w.mondayIso === monIso);
+  const dayInfo = calendarData.daysMap[iso];
+  const weekType = dayInfo?.weekType || weekObj?.weekType || null;
+
+  const weekSelect = document.getElementById('examCalendarWeekSelect');
   const dateInput = document.getElementById('examCalendarDate');
+  const examDaySel = document.getElementById('examDay');
+  const examWeekSel = document.getElementById('examWeek');
+  const infoBox = document.getElementById('calendarDateInfo');
+
+  if (weekSelect && weekObj) weekSelect.value = weekObj.mondayIso;
   if (dateInput) dateInput.value = iso;
-
-  const dayInfo = calendarData?.daysByDate?.[iso];
-  const weekSel = document.getElementById('examCalendarWeekSelect');
-  const weekEntry = (weekSel && weekSel.value !== '') ? calendarData?.weeks?.[parseInt(weekSel.value, 10)] : null;
-  const resolvedWeekType = dayInfo?.weekType || weekEntry?.weekType || 'Q1';
-
-  const weekDropdown = document.getElementById('examWeek');
-  if (weekDropdown && (resolvedWeekType === 'Q1' || resolvedWeekType === 'Q2')) {
-    weekDropdown.value = resolvedWeekType;
-  }
+  if (examDaySel && DAYS.includes(dayName)) examDaySel.value = dayName;
+  if (examWeekSel && (weekType === 'Q1' || weekType === 'Q2')) examWeekSel.value = weekType;
 
   selectedCalendarEntry = {
-    mondayStr,
-    dateStr: iso,
-    weekType: resolvedWeekType,
-    isHoliday: Boolean(dayInfo?.isHoliday || weekEntry?.isHoliday)
+    iso,
+    dayName,
+    weekType,
+    weekObj,
+    isHoliday: Boolean(dayInfo?.isHoliday)
   };
 
-  const infoBox = document.getElementById('calendarDateInfo');
   if (infoBox) {
-    const labelSem = resolvedWeekType === 'Q1' ? 'Semaine A (Q1)' : 'Semaine B (Q2)';
-    const warn = selectedCalendarEntry.isHoliday ? ' ⚠️ Attention : Jour férié ou vacances dans le calendrier !' : '';
-    infoBox.textContent = `📆 Date retenue : ${formatDateFR(iso)} (${dayName}) • ${labelSem}${warn}`;
+    const semTxt = weekObj
+      ? `Semaine du ${formatDateFR(weekObj.mondayIso)} au ${formatDateFR(weekObj.sundayIso)}${weekObj.schoolWeekNum ? ` (Semaine de cours n°${weekObj.schoolWeekNum})` : ''}`
+      : '';
+    const qBadge = weekType === 'Q1'
+      ? '<span class="text-purple-800">🟪 Semaine A (H + Q1)</span>'
+      : weekType === 'Q2'
+        ? '<span class="text-sky-800">🟦 Semaine B (H + Q2)</span>'
+        : '<span class="text-amber-700">⚠️ Vacances / Hors alternance SA-SB</span>';
+    const holidayWarn = dayInfo?.isHoliday ? ' <span class="text-red-600 font-black">• ⚠️ Jour férié / Vacances</span>' : '';
+    infoBox.innerHTML = `📌 <strong>${formatDateFR(iso)}</strong> : ${semTxt} • ${qBadge}${holidayWarn}`;
   }
+
+  computeExamSupervisors();
 }
 
 function onCalendarWeekSelectChange() {
-  const weekSel = document.getElementById('examCalendarWeekSelect');
-  if (!weekSel || weekSel.value === '' || !calendarData) return;
-  const w = calendarData.weeks[parseInt(weekSel.value, 10)];
-  if (!w) return;
-  syncDateWithSelectedWeekAndDay(w.mondayStr);
-  computeExamSupervisors();
+  const weekSelect = document.getElementById('examCalendarWeekSelect');
+  const monIso = weekSelect?.value;
+  if (!monIso) {
+    clearCalendarDateSelection();
+    return;
+  }
+  const examDaySel = document.getElementById('examDay');
+  const dayOffset = Math.max(0, DAYS.indexOf(examDaySel?.value || 'lundi'));
+  const d = new Date(`${monIso}T12:00:00`);
+  d.setDate(d.getDate() + dayOffset);
+  applyCalendarIsoDate(d.toISOString().slice(0, 10));
 }
 
 function onCalendarDateChange() {
-  const iso = document.getElementById('examCalendarDate')?.value;
-  if (!iso) return;
-  const [y, m, d] = iso.split('-').map(Number);
-  const dt = new Date(y, m - 1, d);
-  const dow = dt.getDay();
-  if (dow >= 1 && dow <= 5) {
-    const daySel = document.getElementById('examDay');
-    if (daySel) daySel.value = DAYS[dow - 1];
+  const dateInput = document.getElementById('examCalendarDate');
+  if (dateInput?.value) {
+    applyCalendarIsoDate(dateInput.value);
   }
-  const diffToMon = dow === 0 ? 6 : dow - 1;
-  const monday = new Date(y, m - 1, d - diffToMon);
-  const monIso = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
-
-  if (calendarData && Array.isArray(calendarData.weeks)) {
-    const foundIdx = calendarData.weeks.findIndex(w => w.mondayStr === monIso);
-    const weekSel = document.getElementById('examCalendarWeekSelect');
-    if (weekSel && foundIdx >= 0) weekSel.value = String(foundIdx);
-  }
-  syncDateWithSelectedWeekAndDay(monIso);
-  computeExamSupervisors();
 }
 
 function onExamDayChange() {
-  if (selectedCalendarEntry?.mondayStr) {
-    syncDateWithSelectedWeekAndDay(selectedCalendarEntry.mondayStr);
+  if (selectedCalendarEntry?.weekObj) {
+    const examDaySel = document.getElementById('examDay');
+    const dayOffset = Math.max(0, DAYS.indexOf(examDaySel?.value || 'lundi'));
+    const d = new Date(`${selectedCalendarEntry.weekObj.mondayIso}T12:00:00`);
+    d.setDate(d.getDate() + dayOffset);
+    applyCalendarIsoDate(d.toISOString().slice(0, 10));
+  } else {
+    computeExamSupervisors();
   }
-  computeExamSupervisors();
 }
 
 function clearCalendarDateSelection() {
   selectedCalendarEntry = null;
-  const weekSel = document.getElementById('examCalendarWeekSelect');
+  const weekSelect = document.getElementById('examCalendarWeekSelect');
   const dateInput = document.getElementById('examCalendarDate');
   const infoBox = document.getElementById('calendarDateInfo');
-  if (weekSel) weekSel.value = '';
+  if (weekSelect) weekSelect.value = '';
   if (dateInput) dateInput.value = '';
-  if (infoBox) infoBox.textContent = 'Sélectionnez une semaine ou une date pour régler automatiquement la Semaine A (Q1) / Semaine B (Q2).';
+  if (infoBox) {
+    infoBox.textContent = 'Sélectionnez une semaine ou une date pour régler automatiquement la Semaine A (Q1) / Semaine B (Q2).';
+  }
   computeExamSupervisors();
 }
 
 /**
- * MODULE 1 : GESTION DES PROFESSEURS & VŒUX N+1
+ * PARSING DU FICHIER COURS EDT (EXP_COURS.csv)
  */
-function getConstraint(prof, day, slotIdx) {
-  return teacherConstraints?.[prof]?.[`${day}_${slotIdx}`] || 'GREEN';
+function parseTimeToMinutes(timeStr) {
+  const m = (timeStr || '').match(/(\d{1,2})[hH:](\d{2})/);
+  if (!m) return null;
+  return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
 }
 
-function setConstraint(prof, day, slotIdx, val) {
-  if (!prof) return;
-  if (!teacherConstraints[prof]) teacherConstraints[prof] = {};
-  if (val === 'GREEN') {
-    delete teacherConstraints[prof][`${day}_${slotIdx}`];
-  } else {
-    teacherConstraints[prof][`${day}_${slotIdx}`] = val;
+function parseDurationToMinutes(durStr) {
+  const m = (durStr || '').match(/(\d{1,2})[hH:](\d{2})/);
+  if (m) return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  const num = parseFloat((durStr || '').replace(',', '.'));
+  if (!isNaN(num)) return Math.round(num * 60);
+  return 60;
+}
+
+function mapCourseToSlotIndices(dayHourStr, durationStr) {
+  const norm = normalizeStr(dayHourStr);
+  let day = null;
+  for (const d of DAYS) {
+    if (norm.includes(d)) {
+      day = d;
+      break;
+    }
   }
+  if (!day) return { day: null, slotIndices: [] };
+
+  const startMin = parseTimeToMinutes(dayHourStr);
+  if (startMin === null) return { day, slotIndices: [] };
+  const durMin = parseDurationToMinutes(durationStr);
+  const endMin = startMin + Math.max(30, durMin);
+
+  const slotRanges = [
+    { idx: 0, start: 7 * 60, end: 8 * 60 },
+    { idx: 1, start: 8 * 60, end: 9 * 60 },
+    { idx: 2, start: 9 * 60, end: 10 * 60 },
+    { idx: 3, start: 10 * 60 + 5, end: 11 * 60 },
+    { idx: 4, start: 11 * 60, end: 12 * 60 },
+    { idx: 5, start: 12 * 60 + 30, end: 13 * 60 + 30 },
+    { idx: 6, start: 13 * 60 + 45, end: 14 * 60 + 45 },
+    { idx: 7, start: 14 * 60 + 45, end: 15 * 60 + 45 },
+    { idx: 8, start: 15 * 60 + 50, end: 16 * 60 + 50 }
+  ];
+
+  const matched = [];
+  slotRanges.forEach(sr => {
+    const overlap = Math.min(endMin, sr.end) - Math.max(startMin, sr.start);
+    if (overlap >= 25) {
+      matched.push(sr.idx);
+    }
+  });
+
+  if (matched.length === 0) {
+    let closest = slotRanges[0];
+    let bestDiff = Infinity;
+    slotRanges.forEach(sr => {
+      const diff = Math.abs(sr.start - startMin);
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        closest = sr;
+      }
+    });
+    matched.push(closest.idx);
+  }
+
+  return { day, slotIndices: matched };
+}
+
+function inferParentClasses(classStr) {
+  const raw = (classStr || '').trim();
+  if (!raw) return [];
+  const matches = raw.match(/\b([3-6]0\d)\b/g);
+  if (matches) return [...new Set(matches)];
+  const bracketMatches = raw.match(/\[([3-6]0\d)[A-Z0-9_-]*\]/gi);
+  if (bracketMatches) {
+    return [...new Set(bracketMatches.map(m => m.replace(/[\[\]]/g, '').slice(0, 3)))];
+  }
+  return [];
+}
+
+function loadCSV(text, fileName = 'EXP_COURS.csv') {
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+  if (lines.length < 1) {
+    showToast('⚠️ Le fichier CSV des cours semble vide.');
+    return;
+  }
+
+  const sep = detectSeparator(lines[0]);
+  rawHeaders = parseCsvLine(lines[0], sep);
+  const normHeaders = rawHeaders.map(h => normalizeStr(h));
+
+  const headerKeywords = ['prof', 'matiere', 'classe', 'jour', 'heure', 'place', 'duree', 'salle', 'cours', 'alternance', 'frequence', 'semaine', 'division', 'groupe', 'intervenant'];
+  const hasHeaderRow = normHeaders.some(h => headerKeywords.some(kw => h.includes(kw)));
+
+  let colProfNom = -1;
+  let colProfPrenom = -1;
+  let colMatiereCode = -1;
+  let colMatiereLib = -1;
+  let colClasse = -1;
+  let colJourHeure = -1;
+  let colJourSeul = -1;
+  let colHeureSeule = -1;
+  let colDuree = -1;
+  let colAlt = -1;
+  let colSalle = -1;
+  let startRow = 1;
+
+  if (hasHeaderRow) {
+    const findCol = (keywords) => {
+      for (const kw of keywords) {
+        const idx = normHeaders.findIndex(h => h === kw || h.includes(kw));
+        if (idx !== -1) return idx;
+      }
+      return -1;
+    };
+
+    colProfNom = findCol(['professeur - nom', 'prof - nom', 'professeur', 'prof.', 'prof', 'enseignant', 'intervenant', 'nom prof']);
+    colProfPrenom = findCol(['professeur - prenom', 'prof - prenom', 'prenom']);
+    colMatiereCode = findCol(['matiere - code', 'code matiere', 'mat. - code']);
+    colMatiereLib = findCol(['matiere - libelle', 'matiere', 'mat.', 'discipline']);
+    colClasse = findCol(['classe', 'division', 'groupe', 'public']);
+    colJourHeure = findCol(['jour et heure', 'jour/heure', 'creneau', 'place', 'horaire']);
+    colJourSeul = findCol(['jour']);
+    colHeureSeule = findCol(['heure', 'debut', 'h. debut']);
+    colDuree = findCol(['duree']);
+    colAlt = findCol(['alternance', 'frequence', 'semaine', 'quinzaine', 'per.']);
+    colSalle = findCol(['salle']);
+  } else {
+    startRow = 0;
+    const sampleRows = lines.slice(0, Math.min(25, lines.length)).map(l => parseCsvLine(l, sep));
+    const colCount = Math.max(...sampleRows.map(r => r.length));
+
+    for (let c = 0; c < colCount; c++) {
+      const vals = sampleRows.map(r => (r[c] || '').trim()).filter(Boolean);
+      if (vals.length === 0) continue;
+
+      if (colJourHeure === -1 && vals.some(v => /(lundi|mardi|mercredi|jeudi|vendredi|samedi).*\d{1,2}[hH:]\d{2}/i.test(v))) {
+        colJourHeure = c;
+      } else if (colJourSeul === -1 && vals.some(v => /^(lundi|mardi|mercredi|jeudi|vendredi|samedi)$/i.test(v))) {
+        colJourSeul = c;
+      } else if (colHeureSeule === -1 && vals.some(v => /^\d{1,2}[hH:]\d{2}$/.test(v))) {
+        colHeureSeule = c;
+      } else if (colDuree === -1 && vals.some(v => /^\d{1,2}[hH:]\d{2}$/.test(v))) {
+        colDuree = c;
+      } else if (colAlt === -1 && vals.some(v => /^(H|Q1|Q2|SA|SB)$/i.test(v))) {
+        colAlt = c;
+      } else if (colClasse === -1 && vals.some(v => /^(\[.*\]|[3-6]0\d|ULIS|UPE2A)/i.test(v))) {
+        colClasse = c;
+      }
+    }
+
+    for (let c = 0; c < colCount; c++) {
+      if ([colJourHeure, colJourSeul, colHeureSeule, colDuree, colAlt, colClasse].includes(c)) continue;
+      const vals = sampleRows.map(r => (r[c] || '').trim()).filter(Boolean);
+      if (vals.some(v => /^[A-ZÀ-Ÿ][A-ZÀ-Ÿ\s\-']{2,}$/.test(v) && !/^(CG|N|O|H|Q1|Q2|SA|SB)$/.test(v) && !/\d/.test(v))) {
+        if (colMatiereCode === -1 && vals.every(v => v.length <= 6)) {
+          colMatiereCode = c;
+        } else if (colMatiereLib === -1 && vals.some(v => /(MATHEMATIQUES|FRANCAIS|ANGLAIS|HISTOIRE|PHYSIQUE|SCIENCES|EDUCATION|ESPAGNOL|TECHNOLOGIE|ARTS|DEVOIRS)/i.test(v))) {
+          colMatiereLib = c;
+        } else if (colProfNom === -1) {
+          colProfNom = c;
+        }
+      }
+    }
+  }
+
+  const hasTimeCol = colJourHeure !== -1 || (colJourSeul !== -1 && colHeureSeule !== -1);
+  if (colProfNom === -1 || !hasTimeCol) {
+    const apercu = rawHeaders.slice(0, 6).join(' | ');
+    showToast(`⚠️ Colonnes EDT introuvables. En-têtes lus : "${apercu}"`);
+    return;
+  }
+
+  const parsedCourses = [];
+  const profSet = new Set(allProfs);
+  const classSet = new Set();
+
+  for (let i = startRow; i < lines.length; i++) {
+    const cols = parseCsvLine(lines[i], sep);
+    const profRaw = (cols[colProfNom] || '').trim();
+    const profPrenom = colProfPrenom !== -1 ? (cols[colProfPrenom] || '').trim() : '';
+    const dayHour = colJourHeure !== -1
+      ? (cols[colJourHeure] || '').trim()
+      : `${(cols[colJourSeul] || '').trim()} ${(cols[colHeureSeule] || '').trim()}`.trim();
+    if (!profRaw || !dayHour) continue;
+
+    const profNames = profRaw.split(',').map(p => p.trim()).filter(Boolean);
+    const matiereCode = colMatiereCode !== -1 ? (cols[colMatiereCode] || '').trim() : '';
+    const matiereLib = colMatiereLib !== -1 ? (cols[colMatiereLib] || '').trim() : matiereCode;
+    const classe = colClasse !== -1 ? (cols[colClasse] || '').trim() : '';
+    const duree = colDuree !== -1 ? (cols[colDuree] || '').trim() : '1h00';
+    const altRaw = colAlt !== -1 ? (cols[colAlt] || '').trim().toUpperCase() : 'H';
+    const salle = colSalle !== -1 ? (cols[colSalle] || '').trim() : '';
+
+    let alternance = 'H';
+    if (altRaw.includes('Q1') || altRaw === 'SA' || altRaw === 'A') alternance = 'Q1';
+    else if (altRaw.includes('Q2') || altRaw === 'SB' || altRaw === 'B') alternance = 'Q2';
+
+    const { day, slotIndices } = mapCourseToSlotIndices(dayHour, duree);
+    if (!day || slotIndices.length === 0) continue;
+
+    if (classe) classSet.add(classe);
+
+    profNames.forEach(pName => {
+      const fullProf = (profNames.length === 1 && profPrenom && !pName.includes(profPrenom))
+        ? `${pName.toUpperCase()} ${profPrenom}`
+        : pName.toUpperCase();
+      profSet.add(fullProf);
+      checkedProfs.add(fullProf);
+
+      parsedCourses.push({
+        prof: fullProf,
+        matiereCode: matiereCode || matiereLib,
+        matiereLib: matiereLib || matiereCode,
+        classe,
+        salle,
+        day,
+        slotIndices,
+        alternance,
+        dayHour
+      });
+    });
+  }
+
+  if (parsedCourses.length === 0) {
+    showToast('⚠️ Aucun cours planifié trouvé (vérifiez que la colonne Jour et heure est bien exportée depuis EDT).');
+    return;
+  }
+
+  courses = parsedCourses;
+  allProfs = [...profSet].sort((a, b) => a.localeCompare(b, 'fr'));
+  allClasses = [...classSet].sort((a, b) => a.localeCompare(b, 'fr'));
+  if (!selectedProf || !allProfs.includes(selectedProf)) {
+    selectedProf = allProfs[0] || '';
+  }
+  currentDatasetName = fileName;
+  hasLoadedFile = courses.length > 0;
+
+  updateDatasetBadge();
+  triggerAutosave();
+  showToast(`✅ ${courses.length} cours et ${allProfs.length} professeurs importés.`);
+  goToStep(2);
+}
+
+/**
+ * MODULE 1 : PRÉPA N+1 (LISTE PROFESSEURS, GRILLE VŒUX & BILAN)
+ */
+function toggleBulkAddModal() {
+  document.getElementById('bulkAddBox')?.classList.toggle('hidden');
 }
 
 function addNewProf() {
@@ -1344,68 +1662,60 @@ function addNewProf() {
   if (!name) return;
   if (!allProfs.includes(name)) {
     allProfs.push(name);
-    allProfs.sort((a, b) => a.localeCompare(b));
+    allProfs.sort((a, b) => a.localeCompare(b, 'fr'));
+    checkedProfs.add(name);
   }
-  checkedProfs.add(name);
   selectedProf = name;
-  input.value = '';
+  if (input) input.value = '';
   updateDatasetBadge();
-  triggerAutosave();
   renderProfList();
   renderVoeuxGrid();
   renderBilanGrid();
-  showToast(`👤 Professeur ${name} ajouté.`);
-}
-
-function toggleBulkAddModal() {
-  document.getElementById('bulkAddBox')?.classList.toggle('hidden');
+  triggerAutosave();
 }
 
 function addBulkProfs() {
-  const ta = document.getElementById('bulkProfTextarea');
-  const lines = (ta?.value || '').split(/\r?\n/).map(l => l.trim().toUpperCase()).filter(Boolean);
-  if (!lines.length) return;
+  const area = document.getElementById('bulkProfTextarea');
+  const lines = (area?.value || '').split(/\r?\n/).map(l => l.trim().toUpperCase()).filter(Boolean);
+  if (lines.length === 0) return;
   lines.forEach(name => {
-    if (!allProfs.includes(name)) allProfs.push(name);
-    checkedProfs.add(name);
+    if (!allProfs.includes(name)) {
+      allProfs.push(name);
+      checkedProfs.add(name);
+    }
   });
-  allProfs.sort((a, b) => a.localeCompare(b));
-  if (!selectedProf) selectedProf = allProfs[0];
-  ta.value = '';
+  allProfs.sort((a, b) => a.localeCompare(b, 'fr'));
+  if (!selectedProf) selectedProf = allProfs[0] || '';
+  if (area) area.value = '';
   toggleBulkAddModal();
   updateDatasetBadge();
-  triggerAutosave();
   renderProfList();
   renderVoeuxGrid();
   renderBilanGrid();
-  showToast(`✅ ${lines.length} professeur(s) importé(s).`);
-}
-
-function toggleProfCheck(prof, event) {
-  if (event) event.stopPropagation();
-  if (checkedProfs.has(prof)) {
-    checkedProfs.delete(prof);
-  } else {
-    checkedProfs.add(prof);
-  }
   triggerAutosave();
-  renderProfList();
+  showToast(`✅ ${lines.length} nom(s) ajouté(s).`);
 }
 
-function selectAllProfs(checkState) {
+function selectAllProfs(checked) {
   const search = normalizeStr(document.getElementById('profSearch')?.value || '');
-  const targets = search ? allProfs.filter(p => normalizeStr(p).includes(search)) : allProfs;
-  if (checkState) {
-    targets.forEach(p => checkedProfs.add(p));
-  } else {
-    if (search) {
-      targets.forEach(p => checkedProfs.delete(p));
-    } else {
-      checkedProfs.clear();
+  allProfs.forEach(p => {
+    if (!search || normalizeStr(p).includes(search)) {
+      if (checked) checkedProfs.add(p);
+      else checkedProfs.delete(p);
     }
-  }
-  triggerAutosave();
+  });
   renderProfList();
+}
+
+function toggleProfCheck(prof, isChecked) {
+  if (isChecked) checkedProfs.add(prof);
+  else checkedProfs.delete(prof);
+  updatePrintCheckedCount();
+}
+
+function updatePrintCheckedCount() {
+  const span = document.getElementById('printCheckedCount');
+  if (span) span.textContent = checkedProfs.size;
 }
 
 function selectActiveProf(prof) {
@@ -1414,34 +1724,58 @@ function selectActiveProf(prof) {
   renderVoeuxGrid();
 }
 
+function deleteCheckedProfs() {
+  if (checkedProfs.size === 0) {
+    showToast('⚠️ Aucun professeur coché.');
+    return;
+  }
+  if (!confirm(`Supprimer les ${checkedProfs.size} professeur(s) coché(s) ?`)) return;
+  allProfs = allProfs.filter(p => !checkedProfs.has(p));
+  checkedProfs.forEach(p => delete teacherConstraints[p]);
+  checkedProfs.clear();
+  if (!allProfs.includes(selectedProf)) {
+    selectedProf = allProfs[0] || '';
+  }
+  updateDatasetBadge();
+  renderProfList();
+  renderVoeuxGrid();
+  renderBilanGrid();
+  triggerAutosave();
+}
+
 function renderProfList() {
-  const listEl = document.getElementById('profList');
-  const countEl = document.getElementById('profCountLabel');
-  const printCountEl = document.getElementById('printCheckedCount');
+  const container = document.getElementById('profList');
+  const countLabel = document.getElementById('profCountLabel');
   const search = normalizeStr(document.getElementById('profSearch')?.value || '');
+  if (!container) return;
 
-  if (countEl) countEl.textContent = allProfs.length;
-  if (printCountEl) printCountEl.textContent = checkedProfs.size;
-  if (!listEl) return;
+  if (countLabel) countLabel.textContent = allProfs.length;
+  updatePrintCheckedCount();
 
-  const filtered = allProfs.filter(p => normalizeStr(p).includes(search));
+  const filtered = allProfs.filter(p => !search || normalizeStr(p).includes(search));
   if (filtered.length === 0) {
-    listEl.innerHTML = '<div class="p-4 text-center text-slate-400 italic">Aucun professeur. Ajoutez-en un ci-dessus ou importez EXP_COURS.csv.</div>';
+    container.innerHTML = `<div class="p-6 text-center text-slate-400 italic text-[11px]">Aucun professeur dans la liste.<br>Ajoutez un nom ci-dessus ou cliquez sur 📋 Liste +.</div>`;
     return;
   }
 
-  listEl.innerHTML = filtered.map(prof => {
-    const isSel = prof === selectedProf;
+  container.innerHTML = filtered.map(prof => {
+    const isSelected = prof === selectedProf;
     const isChecked = checkedProfs.has(prof);
-    const nbVoeux = Object.keys(teacherConstraints[prof] || {}).length;
-    const safeProf = prof.replace(/'/g, "\\'");
+    const cMap = teacherConstraints[prof] || {};
+    const countVoeux = Object.values(cMap).filter(v => v && v !== 'GREEN').length;
+    const badge = countVoeux > 0
+      ? `<span class="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 font-extrabold text-[10px]">${countVoeux}</span>`
+      : '';
+
     return `
-      <div onclick="selectActiveProf('${safeProf}')" class="flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl border cursor-pointer transition ${isSel ? 'bg-blue-800 text-white border-blue-900 shadow-xs' : 'bg-slate-50/70 hover:bg-blue-50 text-slate-800 border-slate-200'}">
-        <div class="flex items-center gap-2 min-w-0">
-          <input type="checkbox" ${isChecked ? 'checked' : ''} onclick="toggleProfCheck('${safeProf}', event)" class="w-3.5 h-3.5 accent-amber-400 shrink-0 cursor-pointer">
-          <span class="font-bold truncate">${escapeHtml(prof)}</span>
+      <div class="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl border transition ${isSelected ? 'bg-blue-800 text-white border-blue-900 shadow-xs' : 'bg-slate-50/70 hover:bg-blue-50 text-slate-800 border-slate-200'}">
+        <div class="flex items-center gap-2 min-w-0 flex-1">
+          <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleProfCheck('${escapeHtml(prof).replace(/'/g, "\\'")}', this.checked)" class="w-3.5 h-3.5 accent-amber-400 shrink-0 cursor-pointer">
+          <button type="button" onclick="selectActiveProf('${escapeHtml(prof).replace(/'/g, "\\'")}')" class="truncate text-left font-bold flex-1 py-0.5">
+            ${escapeHtml(prof)}
+          </button>
         </div>
-        ${nbVoeux > 0 ? `<span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md shrink-0 ${isSel ? 'bg-amber-400 text-blue-950' : 'bg-blue-100 text-blue-800'}">${nbVoeux}</span>` : ''}
+        ${badge}
       </div>
     `;
   }).join('');
@@ -1458,623 +1792,652 @@ function setBrush(brush) {
   });
 }
 
-function paintSlot(day, slotIdx) {
-  if (!selectedProf) return showToast('⚠️ Sélectionnez d\'abord un professeur.');
-  setConstraint(selectedProf, day, slotIdx, activeBrush);
-  triggerAutosave();
-  renderProfList();
+function getConstraint(prof, day, slotIdx) {
+  if (!prof || !teacherConstraints[prof]) return 'GREEN';
+  return teacherConstraints[prof][`${day}_${slotIdx}`] || 'GREEN';
+}
+
+function setConstraint(prof, day, slotIdx, stateVal) {
+  if (!prof) return;
+  if (!teacherConstraints[prof]) teacherConstraints[prof] = {};
+  const key = `${day}_${slotIdx}`;
+  if (!stateVal || stateVal === 'GREEN') {
+    delete teacherConstraints[prof][key];
+  } else {
+    teacherConstraints[prof][key] = stateVal;
+  }
+}
+
+function getTargetProfsForEdit() {
+  const targets = new Set();
+  if (selectedProf) targets.add(selectedProf);
+  checkedProfs.forEach(p => {
+    if (allProfs.includes(p)) targets.add(p);
+  });
+  return [...targets];
+}
+
+function handleCellPaint(day, slotIdx, isToggleClick = false) {
+  const targets = getTargetProfsForEdit();
+  if (targets.length === 0) {
+    showToast('⚠️ Sélectionnez ou cochez au moins un professeur à gauche.');
+    return;
+  }
+  const refProf = selectedProf || targets[0];
+  const current = getConstraint(refProf, day, slotIdx);
+  const nextVal = (isToggleClick && current === activeBrush) ? 'GREEN' : activeBrush;
+  targets.forEach(prof => {
+    setConstraint(prof, day, slotIdx, nextVal);
+  });
   renderVoeuxGrid();
+  renderProfList();
+  renderBilanGrid();
+  triggerAutosave();
 }
 
 function paintPeriodDay(day, period) {
-  if (!selectedProf) return showToast('⚠️ Sélectionnez d\'abord un professeur.');
-  MAIN_SLOTS.forEach(s => {
-    if (s.period === period) {
-      setConstraint(selectedProf, day, s.idx, activeBrush);
-    }
+  const targets = getTargetProfsForEdit();
+  if (targets.length === 0) {
+    showToast('⚠️ Sélectionnez ou cochez au moins un professeur à gauche.');
+    return;
+  }
+  targets.forEach(prof => {
+    MAIN_SLOTS.filter(s => s.period === period).forEach(s => {
+      setConstraint(prof, day, s.idx, activeBrush);
+    });
   });
-  triggerAutosave();
-  renderProfList();
   renderVoeuxGrid();
+  renderProfList();
+  renderBilanGrid();
+  triggerAutosave();
 }
 
-function applyGlobalConstraint(slotIdx, brush) {
-  if (checkedProfs.size === 0) return showToast('⚠️ Cochez au moins un professeur.');
+function applyGlobalConstraint(slotIdx, stateVal) {
+  if (checkedProfs.size === 0) {
+    showToast('⚠️ Cochez au moins un professeur dans la liste.');
+    return;
+  }
   checkedProfs.forEach(prof => {
-    DAYS.forEach(day => setConstraint(prof, day, slotIdx, brush));
+    DAYS.forEach(day => {
+      setConstraint(prof, day, slotIdx, stateVal);
+    });
   });
-  triggerAutosave();
-  renderProfList();
   renderVoeuxGrid();
+  renderProfList();
   renderBilanGrid();
+  triggerAutosave();
   showToast(`✅ Contrainte appliquée à ${checkedProfs.size} professeur(s).`);
 }
 
 function clearSelectedProfsConstraints() {
-  if (checkedProfs.size === 0) return showToast('⚠️ Cochez au moins un professeur.');
+  if (checkedProfs.size === 0) {
+    showToast('⚠️ Cochez au moins un professeur dans la liste.');
+    return;
+  }
   checkedProfs.forEach(prof => {
     delete teacherConstraints[prof];
   });
-  triggerAutosave();
-  renderProfList();
   renderVoeuxGrid();
+  renderProfList();
   renderBilanGrid();
-  showToast(`🧹 Vœux gommés pour ${checkedProfs.size} professeur(s).`);
+  triggerAutosave();
+  showToast(`🧹 Vœux effacés pour ${checkedProfs.size} professeur(s).`);
 }
 
-function deleteCheckedProfs() {
-  if (checkedProfs.size === 0) return showToast('⚠️ Cochez au moins un professeur.');
-  if (!confirm(`Supprimer ${checkedProfs.size} professeur(s) de la liste ?`)) return;
-  allProfs = allProfs.filter(p => !checkedProfs.has(p));
-  checkedProfs.forEach(p => delete teacherConstraints[p]);
-  checkedProfs.clear();
-  selectedProf = allProfs[0] || '';
-  updateDatasetBadge();
-  triggerAutosave();
-  renderProfList();
-  renderVoeuxGrid();
-  renderBilanGrid();
-}
-
-function renderConstraintCellHtml(col, compact = false) {
-  const pad = compact ? 'py-1 px-1.5 text-[9px]' : 'py-2 px-2 text-[10px]';
-  if (col === 'RED') {
-    return `<div class="${pad} rounded-lg bg-red-600 text-white font-black">🟥 Indispo (SA+SB)</div>`;
+function renderConstraintCellHtml(state) {
+  if (state === 'RED') {
+    return `<div class="w-full py-1.5 px-2 rounded-xl bg-red-600 text-white font-extrabold text-[11px] text-center shadow-2xs">🟥 Indisponible (SA+SB)</div>`;
   }
-  if (col === 'ORANGE') {
-    return `<div class="${pad} rounded-lg bg-amber-200 text-amber-950 font-extrabold border border-amber-400">🟧 À éviter</div>`;
+  if (state === 'ORANGE') {
+    return `<div class="w-full py-1.5 px-2 rounded-xl bg-amber-100 border border-amber-400 text-amber-950 font-extrabold text-[11px] text-center">🟧 À éviter</div>`;
   }
-  if (col === 'SA') {
+  if (state === 'SA') {
     return `
-      <div class="grid grid-cols-2 gap-1 text-[9px] font-extrabold">
-        <div class="py-1 px-1 rounded bg-purple-600 text-white">🟪 Indispo SA</div>
-        <div class="py-1 px-1 rounded bg-emerald-100 text-emerald-900">🟩 Dispo SB</div>
-      </div>
-    `;
+      <div class="grid grid-cols-2 gap-1 text-[10px] font-extrabold text-center">
+        <div class="py-1.5 px-1 rounded-lg bg-purple-600 text-white">🟪 Indispo SA</div>
+        <div class="py-1.5 px-1 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800">Dispo SB</div>
+      </div>`;
   }
-  if (col === 'SB') {
+  if (state === 'SB') {
     return `
-      <div class="grid grid-cols-2 gap-1 text-[9px] font-extrabold">
-        <div class="py-1 px-1 rounded bg-emerald-100 text-emerald-900">🟩 Dispo SA</div>
-        <div class="py-1 px-1 rounded bg-sky-600 text-white">🟦 Indispo SB</div>
-      </div>
-    `;
+      <div class="grid grid-cols-2 gap-1 text-[10px] font-extrabold text-center">
+        <div class="py-1.5 px-1 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800">Dispo SA</div>
+        <div class="py-1.5 px-1 rounded-lg bg-sky-600 text-white">🟦 Indispo SB</div>
+      </div>`;
   }
-  return `<div class="${pad} rounded-lg bg-emerald-50 text-emerald-800 font-bold border border-emerald-200/80">🟩 Disponible</div>`;
+  return `<div class="w-full py-1.5 px-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-[11px] text-center">🟩 Disponible</div>`;
 }
 
 function renderVoeuxGrid() {
-  const titleEl = document.getElementById('activeProfTitle');
   const tbody = document.getElementById('voeuxGridBody');
-  if (titleEl) titleEl.textContent = selectedProf || 'Aucun professeur sélectionné';
+  const title = document.getElementById('activeProfTitle');
   if (!tbody) return;
 
   if (!selectedProf) {
-    tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-slate-400 italic">Ajoutez ou sélectionnez un professeur dans la colonne de gauche.</td></tr>';
+    if (title) title.textContent = 'Aucun professeur sélectionné';
+    tbody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-slate-400 italic">Ajoutez ou sélectionnez un professeur à gauche pour saisir ses souhaits.</td></tr>`;
     return;
   }
 
+  if (title) title.textContent = selectedProf;
+
   tbody.innerHTML = MAIN_SLOTS.map(slot => {
-    const isLunch = slot.period === 'LUNCH';
-    const rowBg = isLunch ? 'bg-slate-100/70' : 'bg-white';
-    const cells = DAYS.map(day => {
-      const col = getConstraint(selectedProf, day, slot.idx);
+    if (slot.period === 'LUNCH') {
       return `
-        <td onmousedown="isMouseDownPaint=true; paintSlot('${day}', ${slot.idx})"
-            onmouseenter="if(isMouseDownPaint) paintSlot('${day}', ${slot.idx})"
-            class="p-1.5 border-r border-blue-100 last:border-r-0 cursor-pointer hover:bg-blue-50/70 transition text-center">
-          ${renderConstraintCellHtml(col, false)}
-        </td>
-      `;
+        <tr class="bg-amber-50/70">
+          <td class="p-2.5 font-extrabold text-amber-900 border-r border-amber-200 text-[11px]">${slot.label}</td>
+          <td colspan="5" class="p-2 text-center text-[11px] font-extrabold text-amber-800 tracking-wide">🍽️ PAUSE MÉRIDIENNE</td>
+        </tr>`;
+    }
+
+    const cells = DAYS.map(day => {
+      const state = getConstraint(selectedProf, day, slot.idx);
+      return `
+        <td onmousedown="isMouseDownPaint=true; handleCellPaint('${day}', ${slot.idx}, true)"
+            onmouseenter="if(isMouseDownPaint) handleCellPaint('${day}', ${slot.idx}, false)"
+            class="p-1.5 border-r border-blue-100 cursor-pointer hover:bg-blue-50/60 transition">
+          ${renderConstraintCellHtml(state)}
+        </td>`;
     }).join('');
+
     return `
-      <tr class="${rowBg}">
-        <td class="p-2.5 font-extrabold text-blue-950 bg-blue-50/50 border-r border-blue-100 whitespace-nowrap">${slot.label}</td>
+      <tr>
+        <td class="p-2.5 font-extrabold text-blue-950 bg-slate-50/80 border-r border-blue-100 text-[11px]">${slot.label}</td>
         ${cells}
-      </tr>
-    `;
+      </tr>`;
   }).join('');
 }
 
-window.addEventListener('mouseup', () => { isMouseDownPaint = false; });
-
 function renderBilanGrid() {
   const tbody = document.getElementById('bilanGridBody');
-  const metaEl = document.getElementById('bilanPrintMeta');
-  const totalProfs = allProfs.length;
-  if (metaEl) metaEl.textContent = `Effectif évalué : ${totalProfs} professeur(s) • Édité le ${new Date().toLocaleDateString('fr-FR')}`;
+  const meta = document.getElementById('bilanPrintMeta');
   if (!tbody) return;
 
-  if (totalProfs === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-slate-400 italic">Aucun professeur enregistré dans le Module 1.</td></tr>';
+  const total = allProfs.length;
+  if (meta) {
+    meta.textContent = `Effectif analysé : ${total} professeur(s) • Édité le ${new Date().toLocaleDateString('fr-FR')}`;
+  }
+
+  if (total === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400 italic">Ajoutez des professeurs dans l'onglet A pour visualiser l'équilibre des créneaux.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = MAIN_SLOTS.map(slot => {
-    const cells = DAYS.map(day => {
-      let dispoSA = 0;
-      let dispoSB = 0;
-      allProfs.forEach(p => {
-        const c = getConstraint(p, day, slot.idx);
-        if (c !== 'RED' && c !== 'SA') dispoSA++;
-        if (c !== 'RED' && c !== 'SB') dispoSB++;
+    if (slot.period === 'LUNCH') {
+      return `
+        <tr class="bg-amber-50/70">
+          <td class="p-2.5 font-extrabold text-amber-900 border-r border-amber-200 text-[11px] bilan-lunch-cell">${slot.label}</td>
+          <td colspan="5" class="p-2 text-center text-[11px] font-extrabold text-amber-800 bilan-lunch-cell">🍽️ PAUSE MÉRIDIENNE</td>
+        </tr>`;
+    }
+
+    const colsHtml = DAYS.map(day => {
+      let indispoSA = 0;
+      let indispoSB = 0;
+      let indispoTot = 0;
+      let eviter = 0;
+
+      allProfs.forEach(prof => {
+        const st = getConstraint(prof, day, slot.idx);
+        if (st === 'RED') {
+          indispoTot++;
+          indispoSA++;
+          indispoSB++;
+        } else if (st === 'SA') {
+          indispoSA++;
+        } else if (st === 'SB') {
+          indispoSB++;
+        } else if (st === 'ORANGE') {
+          eviter++;
+        }
       });
 
+      const dispoSA = total - indispoSA;
+      const dispoSB = total - indispoSB;
       const minDispo = Math.min(dispoSA, dispoSB);
-      const ratio = minDispo / totalProfs;
-      let cellStyle = 'bg-emerald-50 text-emerald-950 border-emerald-200';
-      let dot = '🟩';
-      if (ratio < 0.6) {
-        cellStyle = 'bg-red-50 text-red-950 border-red-200';
-        dot = '🟥';
-      } else if (ratio < 0.75) {
-        cellStyle = 'bg-amber-50 text-amber-950 border-amber-200';
-        dot = '🟧';
+      const pct = Math.round((minDispo / total) * 100);
+
+      let statusBadge = '';
+      if (pct >= 75) {
+        statusBadge = `<div class="mt-1.5 py-1 px-2 rounded-lg bg-emerald-600 text-white font-extrabold text-[10px] text-center bilan-status-badge">🟩 BIEN SERVI (${pct}% DISPO)</div>`;
+      } else if (pct >= 60) {
+        statusBadge = `<div class="mt-1.5 py-1 px-2 rounded-lg bg-amber-500 text-blue-950 font-extrabold text-[10px] text-center bilan-status-badge">🟧 VIGILANCE (${pct}% DISPO)</div>`;
+      } else {
+        statusBadge = `<div class="mt-1.5 py-1 px-2 rounded-lg bg-red-600 text-white font-extrabold text-[10px] text-center bilan-status-badge">🟥 CRÉNEAU TENDU (${pct}% DISPO)</div>`;
       }
 
       return `
-        <td class="p-2 border-r border-blue-100 last:border-r-0 ${cellStyle}">
-          <div class="flex items-center justify-between text-[11px] font-extrabold">
-            <span>${dot} Dispo SA / SB :</span>
+        <td class="p-2 border-r border-blue-100 align-top">
+          <div class="flex justify-between text-[11px] font-extrabold text-blue-950 bilan-row-stat">
+            <span>Dispo SA / SB :</span>
             <span class="font-mono-num">${dispoSA} / ${dispoSB}</span>
           </div>
-          <div class="text-[9.5px] opacity-75 mt-0.5">
-            Indispo SA : ${totalProfs - dispoSA} • SB : ${totalProfs - dispoSB}
+          <div class="flex justify-between text-[10px] font-semibold text-slate-500 mb-1 bilan-sub-stat">
+            <span>Indispo SA / SB :</span>
+            <span class="font-mono-num">${indispoSA} / ${indispoSB}</span>
           </div>
-        </td>
-      `;
+          <div class="grid grid-cols-2 gap-1 text-[10px] font-bold bilan-chips">
+            <span class="px-1.5 py-0.5 rounded bg-red-50 text-red-800 border border-red-200">🟥 Tot: ${indispoTot}</span>
+            <span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200">🟧 Évit: ${eviter}</span>
+            <span class="px-1.5 py-0.5 rounded bg-purple-50 text-purple-900 border border-purple-200">🟪 SA: ${indispoSA - indispoTot}</span>
+            <span class="px-1.5 py-0.5 rounded bg-sky-50 text-sky-900 border border-sky-200">🟦 SB: ${indispoSB - indispoTot}</span>
+          </div>
+          ${statusBadge}
+        </td>`;
     }).join('');
 
     return `
-      <tr class="print-break-inside-avoid">
-        <td class="p-2.5 font-extrabold text-blue-950 bg-blue-50/60 border-r border-blue-100 whitespace-nowrap">${slot.label}</td>
-        ${cells}
-      </tr>
-    `;
+      <tr>
+        <td class="p-2.5 font-extrabold text-blue-950 bg-slate-50/80 border-r border-blue-100 text-[11px]">${slot.label}</td>
+        ${colsHtml}
+      </tr>`;
   }).join('');
 }
 
 /**
- * MODULE 2 : LOGIQUE MÉTIER DES EXAMENS, GROUPES, ULIS/UPE2A & HACHURAGE
+ * MODULE 2 : CALCUL DES SURVEILLANCES D'EXAMENS & HACHURAGE
  */
-function inferParentClasses(classeStr, groupeStr) {
-  const combined = `${classeStr || ''} ${groupeStr || ''}`.toUpperCase();
-  const parents = new Set();
-  // Détecte les divisions numérotées (ex: 301, 302, 401...)
-  const matches = combined.match(/(?:^|[^0-9])([3456]\d{2})(?=$|[^0-9])/g);
-  if (matches) {
-    matches.forEach(m => {
-      const num = m.replace(/\D/g, '');
-      if (num) parents.add(num);
-    });
-  }
-  return [...parents];
+function courseMatchesWeek(courseAlt, targetWeek) {
+  if (targetWeek === 'H') return true;
+  if (courseAlt === 'H' || !courseAlt) return true;
+  return courseAlt === targetWeek;
 }
 
-function evaluateCourseExamRelease(course, targetLevelsSet) {
-  const combined = `${course.matiere || ''} ${course.classe || ''} ${course.groupe || ''}`.toUpperCase();
-  const classAndGroup = `${course.classe || ''} ${course.groupe || ''}`.toUpperCase();
-  const isSpecial = combined.includes('ULIS') || combined.includes('UPE2A');
-  const parents = inferParentClasses(course.classe, course.groupe);
+function evaluateCourseExamRelease(course, selectedLevels) {
+  const upperCls = (course.classe || '').toUpperCase();
+  const upperMat = (course.matiereLib || course.matiereCode || '').toUpperCase();
+  const upperSalle = (course.salle || '').toUpperCase();
 
-  if (isSpecial) {
-    return { released: false, partialGroup: false, specialMaintained: true, parents };
+  if (
+    upperCls.includes('ULIS') || upperMat.includes('ULIS') || upperSalle.includes('ULIS') ||
+    upperCls.includes('UPE2A') || upperMat.includes('UPE2A') || upperSalle.includes('UPE2A') ||
+    upperMat.includes('PAS DE COURS') || upperCls.includes('PAS DE COURS')
+  ) {
+    return { released: false, reason: 'Maintenu (ULIS / UPE2A / Spécifique)' };
   }
 
-  let matchesLevel = false;
-  // 1) Correspondance via divisions 3xx / 4xx / 5xx / 6xx (ex: 303, 301G1...)
-  parents.forEach(p => {
-    if (targetLevelsSet.has(p.charAt(0))) matchesLevel = true;
+  if (!selectedLevels || selectedLevels.length === 0) {
+    return { released: false, reason: '' };
+  }
+
+  const detectedLevels = new Set();
+  ['6', '5', '4', '3'].forEach(lvl => {
+    const regex = new RegExp(`(?:^|[^0-9])${lvl}(?:0\\d|°|E\\b|EME|ÈME|[A-Z])`, 'i');
+    if (regex.test(upperCls)) {
+      detectedLevels.add(lvl);
+    }
   });
 
-  // 2) Correspondance via groupes de niveau (ex: [3° ESP LV1], 3E, 3EME, 3ÈME, 3A, [3ESP1]...)
-  if (!matchesLevel) {
-    const levelRegex = /(?:^|[^0-9A-Z])([3456])(?:\s*[°º]|\s*E(?:ME)?|\s*ÈME|[A-Z]{1,6}(?=$|[^0-9A-Z]))/g;
-    let m;
-    while ((m = levelRegex.exec(classAndGroup)) !== null) {
-      if (targetLevelsSet.has(m[1])) {
-        matchesLevel = true;
-        break;
-      }
-    }
+  if (detectedLevels.size === 0) {
+    return { released: false, reason: '' };
   }
 
-  const isGroup = Boolean(course.groupe) || /\[|GRP|G\d|°|º/i.test(course.classe || '');
-  return {
-    released: matchesLevel,
-    partialGroup: isGroup,
-    specialMaintained: false,
-    parents
-  };
+  const allConvoked = [...detectedLevels].every(lvl => selectedLevels.includes(lvl));
+  if (allConvoked) {
+    const parents = inferParentClasses(course.classe);
+    const grpInfo = parents.length > 0 && course.classe.startsWith('[') ? ` • Grp [${parents.join(', ')}]` : '';
+    const altInfo = (course.alternance && course.alternance !== 'H') ? ` (${course.alternance})` : '';
+    return {
+      released: true,
+      reason: `Libéré : ${course.matiereCode || course.matiereLib} — ${course.classe}${altInfo}${grpInfo}`
+    };
+  }
+
+  return { released: false, reason: 'Groupe mixte' };
 }
 
-function getExamContextPrefix() {
+function getExamContextKey() {
   const day = document.getElementById('examDay')?.value || 'lundi';
   const period = document.getElementById('examPeriod')?.value || 'AM';
-  const weekCode = document.getElementById('examWeek')?.value || 'H';
-  const datePart = selectedCalendarEntry?.dateStr || `${day}_${weekCode}`;
-  return `${datePart}_${period}`;
+  const week = document.getElementById('examWeek')?.value || 'Q1';
+  const levels = [...document.querySelectorAll('.exam-level-cb:checked')].map(cb => cb.value).sort().join('-');
+  const datePart = selectedCalendarEntry?.iso || 'manual';
+  return `${datePart}_${day}_${period}_${week}_${levels}`;
 }
 
-function isSupervisorHatched(slotIdx, profName) {
-  const key = `${getExamContextPrefix()}_${slotIdx}_${profName}`;
-  return Boolean(hatchedSupervisors[key]);
-}
-
-function toggleSupervisorHatched(slotIdx, profName) {
-  const key = `${getExamContextPrefix()}_${slotIdx}_${profName}`;
-  if (hatchedSupervisors[key]) {
-    delete hatchedSupervisors[key];
+function toggleSupervisorHatched(slotIdx, prof) {
+  const ctxKey = getExamContextKey();
+  const entryKey = `${ctxKey}__${slotIdx}__${prof}`;
+  if (hatchedSupervisors[entryKey]) {
+    delete hatchedSupervisors[entryKey];
   } else {
-    hatchedSupervisors[key] = true;
+    hatchedSupervisors[entryKey] = true;
   }
   triggerAutosave();
   computeExamSupervisors();
 }
 
 function clearHatchedSupervisors() {
-  const prefix = `${getExamContextPrefix()}_`;
-  let removed = 0;
+  const ctxKey = getExamContextKey();
   Object.keys(hatchedSupervisors).forEach(k => {
-    if (k.startsWith(prefix)) {
+    if (k.startsWith(`${ctxKey}__`)) {
       delete hatchedSupervisors[k];
-      removed++;
     }
   });
   triggerAutosave();
   computeExamSupervisors();
-  showToast(removed > 0 ? `🧹 ${removed} affectation(s) hachurée(s) réinitialisée(s).` : 'ℹ️ Aucun professeur hachuré sur cette demi-journée.');
+  showToast('🧹 Hachures réinitialisées pour cette demi-journée.');
 }
 
 function computeExamSupervisors() {
-  const thead = document.getElementById('examTableHead');
   const tbody = document.getElementById('examTableBody');
-  if (!thead || !tbody) return;
-
-  if (!hasLoadedFile || courses.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400 italic">Veuillez d\'abord importer votre fichier <strong>EXP_COURS.csv</strong> pour calculer les surveillances.</td></tr>';
-    return;
-  }
+  const thead = document.getElementById('examTableHead');
+  const titleEl = document.getElementById('examResultTitle');
+  const subEl = document.getElementById('examResultSub');
+  if (!tbody || !thead) return;
 
   const day = document.getElementById('examDay')?.value || 'lundi';
   const period = document.getElementById('examPeriod')?.value || 'AM';
-  const weekCode = document.getElementById('examWeek')?.value || 'Q1';
-  const niveaux = [...document.querySelectorAll('.exam-level-cb:checked')].map(cb => cb.value);
-  const targetLevelsSet = new Set(niveaux);
+  const week = document.getElementById('examWeek')?.value || 'Q1';
+  const selectedLevels = [...document.querySelectorAll('.exam-level-cb:checked')].map(cb => cb.value);
 
-  const periodSlots = MAIN_SLOTS.filter(s => s.period === period).map(s => s.idx);
+  const dayLabel = day.charAt(0).toUpperCase() + day.slice(1);
+  const periodLabel = period === 'AM' ? 'Matin' : 'Après-midi';
+  const dateStr = selectedCalendarEntry?.iso ? ` • Date : ${formatDateFR(selectedCalendarEntry.iso)}` : '';
+  const levelsLabel = selectedLevels.length > 0 ? selectedLevels.map(l => `${l}ème`).join(', ') : 'Aucun niveau coché';
+  const weekLabel = week === 'Q1' ? 'Semaine A (H+Q1)' : week === 'Q2' ? 'Semaine B (H+Q2)' : 'Semaine Commune (H)';
 
-  const matchesWeek = (freq) => {
-    if (weekCode === 'H') return true;
-    return freq === 'H' || freq === weekCode;
-  };
-
-  // Professeurs qui ont au moins un cours MAINTENU (hors niveaux en examen) sur cette demi-journée
-  // Professeurs qui travaillent sur cette demi-journée (cours maintenus OU libérés par l'examen)
-  // ET détection des créneaux creux situés entre deux cours sur la journée
-  const profsPresentsDemiJournee = new Set();
-  const profHalfDayCoursesSummary = {};
-  const profDayAllCourses = {};
-
-  courses.forEach(c => {
-    if (c.day !== day || !matchesWeek(c.freq)) return;
-    const evalRes = evaluateCourseExamRelease(c, targetLevelsSet);
-    c.profs.forEach(p => {
-      if (!profDayAllCourses[p]) profDayAllCourses[p] = [];
-      profDayAllCourses[p].push({
-        slotIdx: c.slotIdx,
-        classe: c.classe,
-        released: evalRes.released,
-        specialMaintained: evalRes.specialMaintained
-      });
-    });
-
-    if (!periodSlots.includes(c.slotIdx)) return;
-    c.profs.forEach(p => {
-      profsPresentsDemiJournee.add(p);
-      if (!profHalfDayCoursesSummary[p]) profHalfDayCoursesSummary[p] = [];
-      const tag = evalRes.released ? ' (lib.)' : (evalRes.specialMaintained ? ' (ULIS/UPE2A)' : '');
-      const label = `${MAIN_SLOTS[c.slotIdx].code} ${c.classe}${tag}`;
-      if (!profHalfDayCoursesSummary[p].includes(label)) {
-        profHalfDayCoursesSummary[p].push(label);
-      }
-    });
-  });
-
-  // Calcul pour chaque prof de l'amplitude min..max de ses cours sur la journée (pour détecter les trous entre deux cours)
-  const profDaySpan = {};
-  Object.entries(profDayAllCourses).forEach(([p, list]) => {
-    if (list.length >= 2) {
-      const indices = list.map(item => item.slotIdx);
-      profDaySpan[p] = {
-        minSlot: Math.min(...indices),
-        maxSlot: Math.max(...indices),
-        list
-      };
-    }
-  });
+  if (titleEl) titleEl.textContent = `Surveillants potentiels : ${dayLabel} ${periodLabel}${dateStr}`;
+  if (subEl) subEl.textContent = `Divisions & Groupes libérés : ${levelsLabel} • Semaine retenue : ${weekLabel}`;
 
   thead.innerHTML = `
-    <tr class="bg-blue-50 text-blue-950 uppercase border-b-2 border-blue-200 text-[11px]">
-      <th class="p-3 w-32 border-r border-blue-200 bg-blue-950 text-amber-300">Créneau Horaire</th>
-      <th class="p-3 w-[34%] border-r border-blue-200 bg-emerald-50/80 text-emerald-950">
-        <div>✨ Libérés par l'examen</div>
-        <div class="text-[9.5px] font-semibold normal-case text-emerald-800">Classe entière ou groupe en examen (hors ULIS / UPE2A)</div>
-      </th>
-      <th class="p-3 w-[34%] border-r border-blue-200 bg-amber-50/80 text-amber-950">
-        <div>⏳ En trou sur la 1/2 journée</div>
-        <div class="text-[9.5px] font-semibold normal-case text-amber-800">Présents avec d'autres niveaux, libres à cette heure</div>
-      </th>
-      <th class="p-3 w-[18%] border-r border-blue-200 bg-slate-100 text-slate-800">Maintenus en cours</th>
-      <th class="p-3 w-24 text-center bg-blue-100/70 text-blue-950">Total Dispo</th>
-    </tr>
+    <th class="p-3 w-32 border-r border-blue-200 bg-blue-950 text-amber-400">Créneau Horaire</th>
+    <th class="p-3 w-[38%] border-r border-blue-200 bg-emerald-50/90 text-emerald-950">
+      <div>✨ Libérés par l'examen</div>
+      <div class="text-[10px] font-normal normal-case text-emerald-800">Classe entière ou groupe intégralement en examen (hors ULIS / UPE2A).</div>
+    </th>
+    <th class="p-3 w-[36%] border-r border-blue-200 bg-amber-50/90 text-amber-950">
+      <div>⏳ En trou sur la 1/2 journée</div>
+      <div class="text-[10px] font-normal normal-case text-amber-800">Présents sur la journée/demi-journée mais sans cours sur ce créneau.</div>
+    </th>
+    <th class="p-3 w-[18%] border-r border-blue-200 bg-slate-50 text-slate-800">
+      <div>📚 Maintenus en cours</div>
+      <div class="text-[10px] font-normal normal-case text-slate-500">Autres niveaux, groupes mixtes, ULIS ou UPE2A.</div>
+    </th>
+    <th class="p-3 w-20 text-center bg-blue-900 text-white">Total Dispo</th>
   `;
 
-  let rowsHtml = '';
+  if (!hasLoadedFile || courses.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400 italic">Importez d'abord le fichier <strong>EXP_COURS.csv</strong> pour calculer les surveillants disponibles.</td></tr>`;
+    return;
+  }
 
-  periodSlots.forEach(sIdx => {
-    const profsExamenMap = new Map();
-    const profsOccupesMap = new Map();
+  const targetSlots = MAIN_SLOTS.filter(s => s.period === period);
+  const ctxKey = getExamContextKey();
 
-    courses.forEach(c => {
-      if (c.day !== day || c.slotIdx !== sIdx || !matchesWeek(c.freq)) return;
-      const evalRes = evaluateCourseExamRelease(c, targetLevelsSet);
-      const grpSuffix = evalRes.parents.length && evalRes.partialGroup ? ` • Grp [${evalRes.parents.join(', ')}]` : '';
-      const freqSuffix = c.freq !== 'H' ? ` (${c.freq})` : '';
+  const dayCourses = courses.filter(c => c.day === day && courseMatchesWeek(c.alternance, week));
 
-      c.profs.forEach(p => {
-        if (evalRes.released) {
-          const info = `${c.matiere} — ${c.classe}${grpSuffix}${freqSuffix}`;
-          profsExamenMap.set(p, profsExamenMap.has(p) ? `${profsExamenMap.get(p)} + ${info}` : info);
-        } else {
-          const lockTag = evalRes.specialMaintained ? ' 🔒 ULIS/UPE2A' : '';
-          const info = `${c.matiere} (${c.classe})${lockTag}`;
-          profsOccupesMap.set(p, profsOccupesMap.has(p) ? `${profsOccupesMap.get(p)} + ${info}` : info);
-        }
-      });
+  const profSlotCourses = {};
+  dayCourses.forEach(c => {
+    if (!profSlotCourses[c.prof]) profSlotCourses[c.prof] = {};
+    c.slotIndices.forEach(sIdx => {
+      if (!profSlotCourses[c.prof][sIdx]) profSlotCourses[c.prof][sIdx] = [];
+      profSlotCourses[c.prof][sIdx].push(c);
     });
-
-    // Un prof ayant un cours maintenu en parallèle sur le même créneau reste maintenu
-    const vraisLiberes = [...profsExamenMap.keys()].filter(p => !profsOccupesMap.has(p)).sort();
-    const profsEnTrouSet = new Set();
-    const profTrouReasonMap = {};
-
-    // 1) Profs présents sur la demi-journée (au début, au milieu ou à la fin) et sans cours à cette heure
-    profsPresentsDemiJournee.forEach(p => {
-      if (!profsOccupesMap.has(p) && !vraisLiberes.includes(p)) {
-        profsEnTrouSet.add(p);
-        profTrouReasonMap[p] = `1/2j : ${(profHalfDayCoursesSummary[p] || []).join(', ')}`;
-      }
-    });
-
-    // 1bis) Pour l'après-midi : profs ayant travaillé le matin même (en trou en fin de journée l'après-midi)
-    if (period === 'PM') {
-      Object.entries(profDayAllCourses).forEach(([p, list]) => {
-        if (profsOccupesMap.has(p) || vraisLiberes.includes(p) || profsEnTrouSet.has(p)) return;
-        const morningCourses = list.filter(x => MAIN_SLOTS[x.slotIdx]?.period === 'AM');
-        if (morningCourses.length > 0) {
-          profsEnTrouSet.add(p);
-          const amSummary = [...new Set(morningCourses.map(x => `${MAIN_SLOTS[x.slotIdx].code} ${x.classe}${x.released ? ' (lib.)' : ''}`))].join(', ');
-          profTrouReasonMap[p] = `Fin journée (Matin : ${amSummary})`;
-        }
-      });
-    }
-
-    // 2) Profs ayant un créneau vide (trou) situé strictement ENTRE deux cours de leur emploi du temps du jour
-    Object.entries(profDaySpan).forEach(([p, span]) => {
-      if (profsOccupesMap.has(p) || vraisLiberes.includes(p)) return;
-      if (sIdx > span.minSlot && sIdx < span.maxSlot) {
-        profsEnTrouSet.add(p);
-        if (!profTrouReasonMap[p]) {
-          const prevCourse = [...span.list].filter(x => x.slotIdx < sIdx).sort((a, b) => b.slotIdx - a.slotIdx)[0];
-          const nextCourse = [...span.list].filter(x => x.slotIdx > sIdx).sort((a, b) => a.slotIdx - b.slotIdx)[0];
-          const prevTxt = prevCourse ? `${MAIN_SLOTS[prevCourse.slotIdx].code} (${prevCourse.classe}${prevCourse.released ? ' lib.' : ''})` : '';
-          const nextTxt = nextCourse ? `${MAIN_SLOTS[nextCourse.slotIdx].code} (${nextCourse.classe}${nextCourse.released ? ' lib.' : ''})` : '';
-          profTrouReasonMap[p] = `Entre cours : ${prevTxt} ↔ ${nextTxt}`;
-        }
-      }
-    });
-
-    const vraisTrou = [...profsEnTrouSet].sort();
-
-    const liberesRestants = vraisLiberes.filter(p => !isSupervisorHatched(sIdx, p)).length;
-    const trouRestants = vraisTrou.filter(p => !isSupervisorHatched(sIdx, p)).length;
-    const total = vraisLiberes.length + vraisTrou.length;
-    const totalRestants = liberesRestants + trouRestants;
-    const totalMobilises = total - totalRestants;
-
-    rowsHtml += `
-      <tr class="print-break-inside-avoid">
-        <td class="p-3 font-black text-blue-950 bg-blue-50/70 border-r border-blue-200 align-middle whitespace-nowrap">
-          <div class="text-xs">${MAIN_SLOTS[sIdx].label}</div>
-        </td>
-
-        <td class="p-3 border-r border-blue-200 align-top bg-emerald-50/20">
-          <div class="font-black text-emerald-800 mb-1.5 border-b border-emerald-200 pb-1 flex items-center justify-between">
-            <span>${liberesRestants} / ${vraisLiberes.length} prof(s) libéré(s)</span>
-            ${vraisLiberes.length - liberesRestants > 0 ? `<span class="text-[9px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-bold">${vraisLiberes.length - liberesRestants} affecté(s)</span>` : ''}
-          </div>
-          <div class="grid sm:grid-cols-2 gap-1.5 text-[10px] text-slate-800 font-semibold leading-tight">
-            ${vraisLiberes.map(p => {
-              const hatched = isSupervisorHatched(sIdx, p);
-              const safeP = p.replace(/'/g, "\\'");
-              return `
-              <div onclick="toggleSupervisorHatched(${sIdx}, '${safeP}')" title="Cliquer pour ${hatched ? 'libérer à nouveau ce professeur' : 'hachurer (affecter en surveillance)'}" class="p-1.5 rounded-lg border shadow-2xs cursor-pointer transition select-none ${hatched ? 'hatched-prof-card' : 'bg-white border-emerald-200 hover:border-blue-500 hover:shadow-xs'}">
-                <div class="flex items-center justify-between gap-1">
-                  <span class="font-extrabold ${hatched ? 'line-through text-slate-600' : 'text-blue-950'}">${escapeHtml(p)}</span>
-                  ${hatched ? '<span class="text-[8px] font-black uppercase bg-slate-700 text-white px-1.5 py-0.2 rounded shrink-0">Affecté</span>' : ''}
-                </div>
-                <div class="text-[9px] ${hatched ? 'line-through text-slate-500' : 'text-amber-700'}">${escapeHtml(profTrouReasonMap[p] || '')}</div>
-              </div>
-            `;
-            }).join('') || '<span class="text-slate-400 italic font-normal">Aucun</span>'}
-          </div>
-        </td>
-
-        <td class="p-3 border-r border-blue-200 align-top bg-amber-50/20">
-          <div class="font-black text-amber-700 mb-1.5 border-b border-amber-200 pb-1 flex items-center justify-between">
-            <span>${trouRestants} / ${vraisTrou.length} prof(s) en trou</span>
-            ${vraisTrou.length - trouRestants > 0 ? `<span class="text-[9px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-bold">${vraisTrou.length - trouRestants} affecté(s)</span>` : ''}
-          </div>
-          <div class="grid sm:grid-cols-2 gap-1.5 text-[10px] text-slate-800 font-semibold leading-tight">
-            ${vraisTrou.map(p => {
-              const hatched = isSupervisorHatched(sIdx, p);
-              const safeP = p.replace(/'/g, "\\'");
-              return `
-              <div onclick="toggleSupervisorHatched(${sIdx}, '${safeP}')" title="Cliquer pour ${hatched ? 'libérer à nouveau ce professeur' : 'hachurer (affecter en surveillance)'}" class="p-1.5 rounded-lg border shadow-2xs cursor-pointer transition select-none ${hatched ? 'hatched-prof-card' : 'bg-white border-amber-200 hover:border-blue-500 hover:shadow-xs'}">
-                <div class="flex items-center justify-between gap-1">
-                  <span class="font-extrabold ${hatched ? 'line-through text-slate-600' : 'text-blue-950'}">${escapeHtml(p)}</span>
-                  ${hatched ? '<span class="text-[8px] font-black uppercase bg-slate-700 text-white px-1.5 py-0.2 rounded shrink-0">Affecté</span>' : ''}
-                </div>
-                <div class="text-[9px] ${hatched ? 'line-through text-slate-500' : 'text-amber-700'}">${escapeHtml(profTrouReasonMap[p] || '')}</div>
-              </div>
-            `;
-            }).join('') || '<span class="text-slate-400 italic font-normal">Aucun</span>'}
-          </div>
-        </td>
-
-        <td class="p-3 border-r border-blue-200 align-top bg-slate-50/60">
-          <div class="font-bold text-slate-600 mb-1 text-[10px]">${profsOccupesMap.size} prof(s) maintenu(s)</div>
-          <details class="text-[9px] text-slate-500 cursor-pointer">
-            <summary class="font-semibold hover:text-blue-700">Voir détails classes & groupes</summary>
-            <div class="mt-1.5 space-y-1 pl-1 border-l-2 border-slate-300">
-              ${[...profsOccupesMap.entries()].sort((a,b) => a[0].localeCompare(b[0])).map(([p, d]) => `<div><strong class="text-slate-700">${escapeHtml(p)}</strong> : ${escapeHtml(d)}</div>`).join('') || 'Aucun'}
-            </div>
-          </details>
-        </td>
-
-        <td class="p-3 text-center bg-blue-50/50 align-middle">
-          <span class="text-xl font-black text-blue-900">${totalRestants}</span><span class="text-xs font-bold text-slate-400">/${total}</span>
-          <div class="text-[9px] font-bold text-slate-500">${liberesRestants} lib. + ${trouRestants} trou</div>
-          ${totalMobilises > 0 ? `<div class="mt-1 inline-block text-[8.5px] font-extrabold bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">${totalMobilises} hachuré(s)</div>` : ''}
-        </td>
-      </tr>
-    `;
   });
 
-  tbody.innerHTML = rowsHtml;
-  
-  const nivLabels = niveaux.length ? niveaux.map(n => n + 'ème').join(', ') : 'Aucun niveau ciblé';
-  const periodLabel = period === 'AM' ? 'Matin' : 'Après-midi';
-  const calLabel = selectedCalendarEntry ? ` • Date : ${formatDateFR(selectedCalendarEntry.dateStr)}` : '';
-  
-  document.getElementById('examResultTitle').textContent = `Surveillants potentiels : ${day.charAt(0).toUpperCase() + day.slice(1)} ${periodLabel}${calLabel}`;
-  document.getElementById('examResultSub').textContent = `Divisions & Groupes libérés : ${nivLabels} • Semaine retenue : ${weekCode === 'Q1' ? 'Semaine A (H+Q1)' : weekCode === 'Q2' ? 'Semaine B (H+Q2)' : 'Commune (H)'}`;
+  const periodSlotIndices = targetSlots.map(s => s.idx);
+  const amSlotIndices = MAIN_SLOTS.filter(s => s.period === 'AM').map(s => s.idx);
+
+  tbody.innerHTML = targetSlots.map(slot => {
+    const liberated = [];
+    const inHole = [];
+    const maintained = [];
+
+    allProfs.forEach(prof => {
+      const pSlots = profSlotCourses[prof] || {};
+      const slotList = pSlots[slot.idx] || [];
+
+      if (slotList.length > 0) {
+        const evals = slotList.map(c => ({ course: c, res: evaluateCourseExamRelease(c, selectedLevels) }));
+        const allReleased = evals.every(e => e.res.released);
+        if (allReleased) {
+          liberated.push({
+            prof,
+            detail: evals.map(e => e.res.reason).join(' | ')
+          });
+        } else {
+          maintained.push({
+            prof,
+            detail: slotList.map(c => `${c.matiereCode || c.matiereLib} (${c.classe})`).join(', ')
+          });
+        }
+      } else {
+        const periodCoursesList = [];
+        periodSlotIndices.forEach(idx => {
+          (pSlots[idx] || []).forEach(c => {
+            const ev = evaluateCourseExamRelease(c, selectedLevels);
+            const code = MAIN_SLOTS.find(ms => ms.idx === idx)?.code || '';
+            periodCoursesList.push({
+              idx,
+              code,
+              classe: c.classe,
+              released: ev.released
+            });
+          });
+        });
+
+        const hasCourseInPeriod = periodCoursesList.length > 0;
+        const hasCourseInMorning = period === 'PM' && amSlotIndices.some(idx => (pSlots[idx] || []).length > 0);
+
+        if (hasCourseInPeriod || hasCourseInMorning) {
+          let holeDetail = '';
+          const before = periodCoursesList.filter(item => item.idx < slot.idx);
+          const after = periodCoursesList.filter(item => item.idx > slot.idx);
+
+          if (before.length > 0 && after.length > 0) {
+            const bLast = before[before.length - 1];
+            const aFirst = after[0];
+            holeDetail = `Entre cours : ${bLast.code} (${bLast.classe}${bLast.released ? ' lib.' : ''}) ↔ ${aFirst.code} (${aFirst.classe}${aFirst.released ? ' lib.' : ''})`;
+          } else if (periodCoursesList.length > 0) {
+            const summary = periodCoursesList
+              .map(item => `${item.code} ${item.classe}${item.released ? ' (lib.)' : ''}`)
+              .join(', ');
+            holeDetail = `${period === 'AM' ? 'Matin' : 'Après-midi'} : ${summary}`;
+          } else if (hasCourseInMorning) {
+            holeDetail = 'Présent le matin (fin de journée libre)';
+          }
+
+          inHole.push({
+            prof,
+            detail: holeDetail
+          });
+        }
+      }
+    });
+
+    const renderProfCard = (item, type) => {
+      const isHatched = Boolean(hatchedSupervisors[`${ctxKey}__${slot.idx}__${item.prof}`]);
+      const baseColors = type === 'LIB'
+        ? 'bg-emerald-50/70 border-emerald-300 text-emerald-950 hover:bg-emerald-100'
+        : 'bg-amber-50/70 border-amber-300 text-amber-950 hover:bg-amber-100';
+      const hatchedClass = isHatched ? 'hatched-prof-card' : baseColors;
+      const badgeHtml = isHatched
+        ? `<span class="px-1.5 py-0.5 rounded bg-slate-700 text-white font-black text-[9px] uppercase tracking-wider shrink-0">AFFECTÉ</span>`
+        : '';
+
+      return `
+        <div onclick="toggleSupervisorHatched(${slot.idx}, '${escapeHtml(item.prof).replace(/'/g, "\\'")}')"
+             class="p-2 rounded-xl border cursor-pointer transition select-none ${hatchedClass}"
+             title="Cliquez pour hachurer / libérer ce surveillant">
+          <div class="flex items-center justify-between gap-1.5">
+            <span class="font-extrabold text-[11px] ${isHatched ? 'line-through text-slate-600' : ''}">${escapeHtml(item.prof)}</span>
+            ${badgeHtml}
+          </div>
+          <div class="text-[10px] ${isHatched ? 'text-slate-500' : 'opacity-85'} mt-0.5 leading-snug">${escapeHtml(item.detail)}</div>
+        </div>`;
+    };
+
+    const libHatchedCount = liberated.filter(i => hatchedSupervisors[`${ctxKey}__${slot.idx}__${i.prof}`]).length;
+    const holeHatchedCount = inHole.filter(i => hatchedSupervisors[`${ctxKey}__${slot.idx}__${i.prof}`]).length;
+    const libRemaining = liberated.length - libHatchedCount;
+    const holeRemaining = inHole.length - holeHatchedCount;
+    const totalRemaining = libRemaining + holeRemaining;
+    const totalAll = liberated.length + inHole.length;
+
+    return `
+      <tr class="print-break-inside-avoid align-top">
+        <td class="p-3 font-extrabold text-blue-950 bg-slate-50/80 border-r border-blue-200 text-xs">
+          ${slot.label}
+        </td>
+        <td class="p-2.5 border-r border-blue-200 bg-emerald-50/20">
+          <div class="flex items-center justify-between text-[11px] font-extrabold text-emerald-900 pb-1.5 mb-2 border-b border-emerald-200">
+            <span>${libRemaining} / ${liberated.length} prof(s) libéré(s)</span>
+            ${libHatchedCount > 0 ? `<span class="text-[10px] text-slate-600">(${libHatchedCount} affecté(s))</span>` : ''}
+          </div>
+          <div class="grid sm:grid-cols-2 gap-1.5">
+            ${liberated.length > 0
+              ? liberated.map(i => renderProfCard(i, 'LIB')).join('')
+              : '<span class="text-[11px] text-slate-400 italic">Aucun professeur libéré</span>'}
+          </div>
+        </td>
+        <td class="p-2.5 border-r border-blue-200 bg-amber-50/20">
+          <div class="flex items-center justify-between text-[11px] font-extrabold text-amber-900 pb-1.5 mb-2 border-b border-amber-200">
+            <span>${holeRemaining} / ${inHole.length} prof(s) en trou</span>
+            ${holeHatchedCount > 0 ? `<span class="text-[10px] text-slate-600">(${holeHatchedCount} affecté(s))</span>` : ''}
+          </div>
+          <div class="grid sm:grid-cols-2 gap-1.5">
+            ${inHole.length > 0
+              ? inHole.map(i => renderProfCard(i, 'HOLE')).join('')
+              : '<span class="text-[11px] text-slate-400 italic">Aucun professeur en trou</span>'}
+          </div>
+        </td>
+        <td class="p-2.5 border-r border-blue-200 bg-slate-50/50">
+          <div class="text-[11px] font-extrabold text-slate-700 mb-1">${maintained.length} prof(s) en cours</div>
+          ${maintained.length > 0 ? `
+            <details class="text-[10px] text-slate-600">
+              <summary class="cursor-pointer font-bold text-blue-700 hover:underline">Voir détails classes & groupes</summary>
+              <ul class="mt-1.5 space-y-1 max-h-40 overflow-y-auto pr-1">
+                ${maintained.map(m => `<li><strong>${escapeHtml(m.prof)}</strong> : ${escapeHtml(m.detail)}</li>`).join('')}
+              </ul>
+            </details>` : '<span class="text-[10px] text-slate-400 italic">Aucun</span>'}
+        </td>
+        <td class="p-3 text-center bg-blue-50/60 font-black text-blue-950">
+          <div class="text-sm font-mono-num">${totalRemaining} / ${totalAll}</div>
+          <div class="text-[9px] font-bold text-slate-500 uppercase">restants</div>
+        </td>
+      </tr>`;
+  }).join('');
 }
 
 /**
- * IMPRESSION A4 PAYSAGE ADAPTÉE AU CONTENU (FICHES PROFS, BILAN N+1, EXAMENS)
+ * IMPRESSION A4 PAYSAGE (FICHES INDIVIDUELLES, BILAN N+1, GRILLE EXAMENS)
  */
-function buildProfVoeuxSheetHtml(profName, index, total) {
-  const cellBgPrintMap = {
-    GREEN:  'bg-emerald-50/50',
-    ORANGE: 'bg-amber-50',
-    SA:     'bg-purple-50/60',
-    SB:     'bg-sky-50/60',
-    RED:    'bg-red-50'
-  };
+function buildProfPrintSheetHtml(prof) {
+  const rowsHtml = MAIN_SLOTS.map(slot => {
+    if (slot.period === 'LUNCH') {
+      return `
+        <tr class="bg-amber-50">
+          <td class="p-1.5 font-extrabold border border-slate-300 text-[10px]">${slot.label}</td>
+          <td colspan="5" class="p-1.5 text-center font-extrabold text-amber-900 border border-slate-300 text-[10px]">🍽️ PAUSE MÉRIDIENNE</td>
+        </tr>`;
+    }
+    const tds = DAYS.map(day => {
+      const st = getConstraint(prof, day, slot.idx);
+      let label = '🟩 Disponible';
+      let cls = 'bg-emerald-50 text-emerald-900';
+      if (st === 'RED') {
+        label = '🟥 Indisponible (SA+SB)';
+        cls = 'bg-red-600 text-white font-bold';
+      } else if (st === 'ORANGE') {
+        label = '🟧 À éviter';
+        cls = 'bg-amber-100 text-amber-950 font-bold';
+      } else if (st === 'SA') {
+        label = '🟪 Indispo SA (Gauche) | Dispo SB';
+        cls = 'bg-purple-100 text-purple-950 font-bold';
+      } else if (st === 'SB') {
+        label = 'Dispo SA | 🟦 Indispo SB (Droite)';
+        cls = 'bg-sky-100 text-sky-950 font-bold';
+      }
+      return `<td class="p-1.5 border border-slate-300 text-center text-[10px] ${cls}">${label}</td>`;
+    }).join('');
 
-  let countRed = 0, countSA = 0, countSB = 0, countOrange = 0, countGreen = 0;
-  let rowsHtml = '';
-
-  MAIN_SLOTS.forEach((slot, sIdx) => {
-    let cellsHtml = `<td class="p-2 font-extrabold text-blue-950 bg-blue-50/70 border border-slate-300">${slot.label}</td>`;
-    DAYS.forEach(day => {
-      const col = getConstraint(profName, day, sIdx);
-      if (col === 'RED') countRed++;
-      else if (col === 'SA') countSA++;
-      else if (col === 'SB') countSB++;
-      else if (col === 'ORANGE') countOrange++;
-      else countGreen++;
-
-      const bgClass = cellBgPrintMap[col] || cellBgPrintMap.GREEN;
-      cellsHtml += `
-        <td class="p-1.5 border border-slate-300 text-center align-middle ${bgClass}">
-          ${renderConstraintCellHtml(col, true)}
-        </td>
-      `;
-    });
-    rowsHtml += `<tr class="print-break-inside-avoid">${cellsHtml}</tr>`;
-  });
-
-  const dateEdit = new Date().toLocaleDateString('fr-FR');
+    return `
+      <tr>
+        <td class="p-1.5 font-extrabold border border-slate-300 bg-slate-100 text-[10px]">${slot.label}</td>
+        ${tds}
+      </tr>`;
+  }).join('');
 
   return `
-    <div class="print-page-sheet bg-white p-2">
-      <div class="flex items-center justify-between border-b-2 border-blue-900 pb-2 mb-3">
+    <div class="print-page-sheet">
+      <div class="flex items-center justify-between border-b-2 border-blue-900 pb-1.5 mb-2 shrink-0">
         <div>
-          <div class="text-[10px] font-black uppercase tracking-widest text-blue-800">PERDIRFORMANCE ⏱️ GEST-EduTemps & PRÉPA N+1</div>
-          <h2 class="text-base font-black text-blue-950 mt-0.5">Fiche individuelle des vœux et disponibilités — <span class="text-blue-700 underline">${escapeHtml(profName)}</span></h2>
+          <div class="text-[9.5px] font-black uppercase tracking-widest text-blue-800">PERDIRFORMANCE ⏱️ GEST-EduTemps — Préparation Emplois du Temps N+1</div>
+          <h2 class="text-sm font-black text-blue-950">Fiche Individuelle de Vœux & Disponibilités : ${escapeHtml(prof)}</h2>
         </div>
-        <div class="text-right text-[10px] font-bold text-slate-600">
-          <div>Édité le ${dateEdit}</div>
-          <div>Fiche ${index + 1} / ${total}</div>
-        </div>
+        <div class="text-[10px] font-bold text-slate-600">Édité le ${new Date().toLocaleDateString('fr-FR')}</div>
       </div>
-
-      <div class="flex flex-wrap items-center justify-between gap-2 mb-3 bg-slate-50 p-2 rounded-xl border border-slate-200 text-[10px] font-bold">
-        <div class="flex flex-wrap gap-3">
-          <span class="text-emerald-800">🟩 Créneaux disponibles : <strong>${countGreen}</strong></span>
-          <span class="text-amber-800">🟧 À éviter : <strong>${countOrange}</strong></span>
-          <span class="text-purple-800">🟪 Indispo Semaine A (Gauche) : <strong>${countSA}</strong></span>
-          <span class="text-sky-800">🟦 Indispo Semaine B (Droite) : <strong>${countSB}</strong></span>
-          <span class="text-red-800">🟥 Indispo Totale (SA+SB) : <strong>${countRed}</strong></span>
-        </div>
-        <div class="text-slate-500 italic">Total : 45 créneaux hebdomadaires</div>
-      </div>
-
-      <table class="w-full text-left border-collapse border border-slate-300 print-fit-table text-xs">
+      <table class="w-full border-collapse print-fit-table print-prof-table">
         <thead>
-          <tr class="bg-blue-900 text-white uppercase text-[10px]">
-            <th class="p-2 w-32 border border-slate-300">Créneau</th>
-            <th class="p-2 w-1/5 border border-slate-300 text-center">Lundi</th>
-            <th class="p-2 w-1/5 border border-slate-300 text-center">Mardi</th>
-            <th class="p-2 w-1/5 border border-slate-300 text-center">Mercredi</th>
-            <th class="p-2 w-1/5 border border-slate-300 text-center">Jeudi</th>
-            <th class="p-2 w-1/5 border border-slate-300 text-center">Vendredi</th>
+          <tr class="bg-blue-900 text-white text-[10px] uppercase">
+            <th class="p-1.5 border border-slate-300 w-28">Créneau</th>
+            <th class="p-1.5 border border-slate-300">Lundi</th>
+            <th class="p-1.5 border border-slate-300">Mardi</th>
+            <th class="p-1.5 border border-slate-300">Mercredi</th>
+            <th class="p-1.5 border border-slate-300">Jeudi</th>
+            <th class="p-1.5 border border-slate-300">Vendredi</th>
           </tr>
         </thead>
-        <tbody>
-          ${rowsHtml}
-        </tbody>
+        <tbody>${rowsHtml}</tbody>
       </table>
-    </div>
-  `;
+      <div class="mt-2 pt-1.5 border-t border-slate-300 flex justify-between text-[10px] text-slate-600 shrink-0">
+        <span>Signature de l'enseignant(e) : _______________________</span>
+        <span>Visa de la Direction : _______________________</span>
+      </div>
+    </div>`;
 }
 
-function triggerPrintForProfs(profsList) {
-  if (!profsList || !profsList.length) {
-    return showToast('⚠️ Aucun professeur sélectionné pour l\'impression.');
+function triggerCleanPrint(targetIdToShow) {
+  const step1 = document.getElementById('step-panel-1');
+  const step2 = document.getElementById('step-panel-2');
+  const voeuxPrint = document.getElementById('voeuxPrintContainer');
+
+  const prevStep1Hidden = step1.classList.contains('hidden');
+  const prevStep2Hidden = step2.classList.contains('hidden');
+
+  if (targetIdToShow === 'voeuxPrintContainer') {
+    step1.classList.add('hidden');
+    step2.classList.add('hidden');
+    voeuxPrint.classList.remove('hidden');
+    voeuxPrint.classList.add('is-printing');
+
+    const cleanupAfterPrint = () => {
+      window.removeEventListener('afterprint', cleanupAfterPrint);
+      voeuxPrint.classList.add('hidden');
+      voeuxPrint.classList.remove('is-printing');
+      voeuxPrint.innerHTML = '';
+      if (!prevStep1Hidden) step1.classList.remove('hidden');
+      if (!prevStep2Hidden) step2.classList.remove('hidden');
+    };
+    window.addEventListener('afterprint', cleanupAfterPrint);
   }
-  const container = document.getElementById('voeuxPrintContainer');
-  const s1Panel = document.getElementById('step-panel-1');
-  const s2Panel = document.getElementById('step-panel-2');
 
-  container.innerHTML = profsList.map((p, idx) => buildProfVoeuxSheetHtml(p, idx, profsList.length)).join('');
-  container.classList.remove('hidden');
-  s1Panel.classList.add('no-print');
-  s2Panel.classList.add('no-print');
-
-  setTimeout(() => {
-    window.print();
-    setTimeout(() => {
-      container.classList.add('hidden');
-      container.innerHTML = '';
-      s1Panel.classList.remove('no-print');
-      s2Panel.classList.remove('no-print');
-    }, 300);
-  }, 100);
+  window.print();
 }
 
 function printActiveProfVoeux() {
-  if (!selectedProf) return showToast('⚠️ Sélectionnez un professeur dans la liste.');
-  triggerPrintForProfs([selectedProf]);
+  if (!selectedProf) {
+    showToast('⚠️ Sélectionnez d\'abord un professeur dans la liste.');
+    return;
+  }
+  const container = document.getElementById('voeuxPrintContainer');
+  if (!container) return;
+  container.innerHTML = buildProfPrintSheetHtml(selectedProf);
+  triggerCleanPrint('voeuxPrintContainer');
 }
 
 function printSelectedProfsVoeux() {
-  const targets = checkedProfs.size > 0 ? allProfs.filter(p => checkedProfs.has(p)) : (selectedProf ? [selectedProf] : []);
-  if (!targets.length) return showToast('⚠️ Cochez au moins un professeur à imprimer.');
-  triggerPrintForProfs(targets);
+  const list = allProfs.filter(p => checkedProfs.has(p));
+  if (list.length === 0) {
+    showToast('⚠️ Cochez au moins un professeur dans la liste.');
+    return;
+  }
+  const container = document.getElementById('voeuxPrintContainer');
+  if (!container) return;
+  container.innerHTML = list.map(prof => buildProfPrintSheetHtml(prof)).join('');
+  triggerCleanPrint('voeuxPrintContainer');
 }
 
 function printBilanTable() {
@@ -2087,32 +2450,34 @@ function printExamTable() {
 }
 
 /**
- * INITIALISATION AU CHARGEMENT
+ * INITIALISATION AU CHARGEMENT DE LA PAGE
  */
-window.addEventListener('DOMContentLoaded', () => {
-  try {
-    const raw = localStorage.getItem(AUTOSAVE_KEY);
-    if (raw) {
-      const savedData = JSON.parse(raw);
-      if (savedData && ((savedData.allProfs && savedData.allProfs.length > 0) || (savedData.courses && savedData.courses.length > 0) || savedData.calendarData)) {
-        restoreStateObject(savedData);
-      } else {
-        clearToBlankState(false);
-      }
-    } else {
-      clearToBlankState(false);
-    }
-  } catch (e) {
-    clearToBlankState(false);
-  }
+window.addEventListener('mouseup', () => {
+  isMouseDownPaint = false;
+});
 
-  window.addEventListener('dragover', e => e.preventDefault());
-  window.addEventListener('drop', e => {
-    e.preventDefault();
-    const file = e.dataTransfer?.files?.[0];
-    if (!file) return;
+document.addEventListener('dragover', e => {
+  e.preventDefault();
+});
+
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  const file = e.dataTransfer?.files?.[0];
+  if (!file) return;
+  if (file.name.toLowerCase().endsWith('.json')) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        restoreStateObject(JSON.parse(ev.target.result));
+        triggerAutosave();
+        showToast('📥 Sauvegarde JSON restaurée.');
+      } catch (err) {
+        showToast('⚠️ Fichier JSON invalide.');
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
+  } else {
     readFileRobust(file, text => {
-      closeCalendarModal();
       if (isCalendarCsvContent(text, file.name)) {
         loadCalendarCSV(text, file.name);
         goToStep(2);
@@ -2120,7 +2485,27 @@ window.addEventListener('DOMContentLoaded', () => {
         loadCSV(text, file.name);
       }
     });
-  });
+  }
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+  goToStep(1);
+  try {
+    const raw = localStorage.getItem(AUTOSAVE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if ((parsed.allProfs && parsed.allProfs.length > 0) || (parsed.courses && parsed.courses.length > 0)) {
+        const banner = document.getElementById('autosaveRestoreBanner');
+        const details = document.getElementById('autosaveBannerDetails');
+        if (details) {
+          details.textContent = `${parsed.allProfs?.length || 0} professeur(s) • ${parsed.courses?.length || 0} cours enregistrés.`;
+        }
+        banner?.classList.remove('hidden');
+      }
+    }
+  } catch (e) {
+    console.warn('Lecture autosave ignorée:', e);
+  }
 });
 </script>
 </body>
